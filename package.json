@@ -1,0 +1,15 @@
+{
+    "name":"mjs-volume",
+    "version":"0.1.0",
+    "dependencies": {
+        "montage": "0.13.7",
+        "digit": "0.3.1",
+        "matte": "0.1.1",
+        "q" : "0.9.6",
+        "collections": "~0.2.1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/fabrobinet/mjs-volume.git"
+    }
+}
