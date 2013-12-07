@@ -62,7 +62,6 @@ var CameraController = require("controllers/camera-controller").CameraController
 var Transform = require("runtime/transform").Transform;
 var Component3D = require("runtime/component-3d").Component3D;
 require("runtime/dependencies/webgl-debug");
-
 /**
     Description TODO
     @class module:"montage/ui/view.reel".view
@@ -499,7 +498,6 @@ exports.View = Component.specialize( {
                     } else {
                         this.needsDraw = true;
                     }
-                    this.scene.styleSheets = document.styleSheets;
                 }
             }
         }
@@ -514,6 +512,10 @@ exports.View = Component.specialize( {
     enterDocument: {
         value: function(firstTime) {
             var self = this;
+
+            if (this.scene) {
+                this.scene.dispatchEventNamed("enteredDocument", true, false, this);
+            }
 
             this.element.addEventListener('wheel', function (event) {
                 if (self.scene) {

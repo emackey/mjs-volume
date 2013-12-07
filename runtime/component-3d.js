@@ -56,6 +56,12 @@ exports.Component3D = Target.specialize( {
         }
     },
 
+    handleEnteredDocument: {
+        value: function() {
+            this.classListDidChange();
+        }
+    },
+
     _glTFElement: { value : null, writable: true },
 
     glTFElement: {
@@ -136,6 +142,8 @@ exports.Component3D = Target.specialize( {
                         // - creating a notification center
                         // - make glTFElement launch events
                         this.glTFElement.component3D = this;
+
+                        this.classListDidChange();
                     }
                 }
             }
@@ -163,17 +171,8 @@ exports.Component3D = Target.specialize( {
         }
     },
 
-    //here we are guaranteed to have the styleSheet
-    _applyCSS: {
-        value: function() {
-            if (this.class) {
-            }
-        }
-    },
-
     handleStyleSheetsChange: {
         value: function(value, key, object) {
-            this._applyCSS();
             var self = this;
             setTimeout(function() {
                 self.scene.removeOwnPropertyChangeListener(key, self);
@@ -185,11 +184,7 @@ exports.Component3D = Target.specialize( {
         value: function() {
             this.resolveIdIfNeeded();
             if (this.scene) {
-                if (this.scene.styleSheets) {
-                    this._applyCSS();
-                } else {
-                    this.scene.addOwnPropertyChangeListener("styleSheets", this);
-                }
+                this.scene.addEventListener("enteredDocument", this);
             }
         }
     },
