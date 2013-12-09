@@ -361,7 +361,7 @@ exports.View = Component.specialize( {
         }
     },
 
-    allowsViewPointControl: { value: true, writable, true },
+    allowsViewPointControl: { value: true, writable: true },
 
     viewPoint: {
         get: function() {
