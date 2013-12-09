@@ -361,6 +361,8 @@ exports.View = Component.specialize( {
         }
     },
 
+    allowsViewPointControl: { value: true, writable, true };
+
     viewPoint: {
         get: function() {
             return this._viewPoint;
@@ -518,7 +520,7 @@ exports.View = Component.specialize( {
             }
 
             this.element.addEventListener('wheel', function (event) {
-                if (self.scene) {
+                if ((self.allowsViewPointControl == true) && (self.scene != null)) {
                     if (self.scene.rootNode) {
                         self._cameraController.node = self.scene.rootNode;
                         self._cameraController.zoom(event);
@@ -540,7 +542,7 @@ exports.View = Component.specialize( {
 
             composer.addEventListener("translate", function(event) {
 
-                if (self.scene) {
+                if ((self.allowsViewPointControl == true) && (self.scene != null)) {
                     if (self.scene.rootNode) {
                         self._cameraController.node = self.scene.rootNode;
                         self._cameraController.translate(event);
@@ -551,7 +553,7 @@ exports.View = Component.specialize( {
 
             composer.addEventListener('translateStart', function (event) {
 
-                if (self.scene) {
+                if ((self.allowsViewPointControl == true) && (self.scene != null)) {
                     if (self.scene.rootNode) {
                         self._cameraController.node = self.scene.rootNode;
                         self._cameraController.beginTranslate(event);
@@ -560,7 +562,7 @@ exports.View = Component.specialize( {
             }, false);
 
             composer.addEventListener('translateEnd', function (event) {
-                if (self.scene) {
+                if ((self.allowsViewPointControl == true) && (self.scene != null)) {
                     if (self.scene.rootNode) {
                         self._cameraController.node = self.scene.rootNode;
                         self._cameraController.endTranslate(event);
