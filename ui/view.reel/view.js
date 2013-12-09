@@ -129,6 +129,15 @@ exports.View = Component.specialize( {
 
     selectedNode: { value: null, writable:true },
 
+    cameraController: {
+        get: function() {
+            if (this._cameraController == null) {
+                this._cameraController = Montage.create(CameraController);
+            }
+            return this._cameraController;
+        }
+    },
+
     sceneWillChange: {
         value: function(value) {
             if (this.getResourceManager()) {
@@ -345,7 +354,7 @@ exports.View = Component.specialize( {
 
     viewPointDidChange: {
         value:function() {
-            this._cameraController.viewPoint = this.viewPoint;
+            this.cameraController.viewPoint = this.viewPoint;
 
             if (this.sceneRenderer) {
                 if (this._viewPoint) {
@@ -450,8 +459,8 @@ exports.View = Component.specialize( {
                             var shouldKeepViewPoint = false;
                             if (this.viewPoint) {
                                 if (this.viewPoint.scene) {
-                                    shouldKeepViewPoint = (this.viewPoint.scenePath != null) && (this.viewPoint.scenePath === m3dScene.scenePath);
-                                }
+                                    shouldKeepViewPoint = (this.viewPoint.scene === this.scene); 
+                                }                                   
                             }
                             if (shouldKeepViewPoint === false) {
                                 this.viewPoint = viewPoints[0];
@@ -522,8 +531,8 @@ exports.View = Component.specialize( {
             this.element.addEventListener('wheel', function (event) {
                 if ((self.allowsViewPointControl == true) && (self.scene != null)) {
                     if (self.scene.rootNode) {
-                        self._cameraController.node = self.scene.rootNode;
-                        self._cameraController.zoom(event);
+                        self.cameraController.node = self.scene.rootNode;
+                        self.cameraController.zoom(event);
                     }
                 }
                 event.stopPropagation();
@@ -544,8 +553,8 @@ exports.View = Component.specialize( {
 
                 if ((self.allowsViewPointControl == true) && (self.scene != null)) {
                     if (self.scene.rootNode) {
-                        self._cameraController.node = self.scene.rootNode;
-                        self._cameraController.translate(event);
+                        self.cameraController.node = self.scene.rootNode;
+                        self.cameraController.translate(event);
                     }
                 }
                 self.needsDraw = true;
@@ -555,8 +564,8 @@ exports.View = Component.specialize( {
 
                 if ((self.allowsViewPointControl == true) && (self.scene != null)) {
                     if (self.scene.rootNode) {
-                        self._cameraController.node = self.scene.rootNode;
-                        self._cameraController.beginTranslate(event);
+                        self.cameraController.node = self.scene.rootNode;
+                        self.cameraController.beginTranslate(event);
                     }
                 }
             }, false);
@@ -564,8 +573,8 @@ exports.View = Component.specialize( {
             composer.addEventListener('translateEnd', function (event) {
                 if ((self.allowsViewPointControl == true) && (self.scene != null)) {
                     if (self.scene.rootNode) {
-                        self._cameraController.node = self.scene.rootNode;
-                        self._cameraController.endTranslate(event);
+                        self.cameraController.node = self.scene.rootNode;
+                        self.cameraController.endTranslate(event);
                     }
                 }
             }, false);
@@ -1161,8 +1170,6 @@ exports.View = Component.specialize( {
             composer.hasMomentum = true;
             composer.allowFloats = true;
             composer.pointerSpeedMultiplier = 0.15;
-
-            this._cameraController = Montage.create(CameraController);
 
             this._internalViewPoint = SceneHelper.createGLTFNodeIncludingCamera("__internal_viewPoint__");
 
