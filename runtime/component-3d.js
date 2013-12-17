@@ -233,7 +233,9 @@ exports.Component3D = Target.specialize( {
     },
 
     _createStyleStateAndPropertyIfNeeded:  {
-        value: function(style, state, property) {
+        value: function(state, property) {
+            var style = this._createDefaultStyleIfNeeded();
+
             if (style[state] == null) {
                 style[state] = {};
             }
@@ -248,8 +250,8 @@ exports.Component3D = Target.specialize( {
     },
 
     _getStylePropertyObject: {
-        value: function(style, state, property) {
-            return this._createStyleStateAndPropertyIfNeeded(style, state, property);
+        value: function(state, property) {
+            return this._createStyleStateAndPropertyIfNeeded(state, property);
         }
     },
 
@@ -469,7 +471,6 @@ exports.Component3D = Target.specialize( {
 
     _applyCSSPropertyWithValueForState: {
         value: function(state, cssProperty, cssValue) {
-            var style = this._createDefaultStyleIfNeeded();
             //to be optimized (remove switch)
             if ((cssValue == null) || (cssProperty == null))
                 return false;
@@ -478,8 +479,7 @@ exports.Component3D = Target.specialize( {
                 return false;
             }
 
-            var declaration = this._getStylePropertyObject(style, state, cssProperty);
-
+            var declaration = this._getStylePropertyObject(state, cssProperty);
             //consider delegating this somewhere else..
             switch(cssProperty) {
                 case "transition": {
@@ -492,6 +492,7 @@ exports.Component3D = Target.specialize( {
                             if (transitionComponents.length > 0) {
                                 var transition = this._createTransitionFromComponents(transitionComponents);
                                 if (transition != null) {
+                                    var style = this._createDefaultStyleIfNeeded();
                                     style.transitions[actualProperty] = transition;
                                 }
                             }
@@ -576,18 +577,39 @@ exports.Component3D = Target.specialize( {
         }
     },
 
+    _removeStyleRule: {
+        value: function(selectorName, styleRule) {
+            if (styleRule.style) {
+                var length = styleRule.style.length;
+                if (length > 0) {
+                    for (var i = 0 ; i < length ; i++) {
+                        var cssProperty = styleRule.style[i];
+                        var cssValue = styleRule.style[cssProperty];
+
+                        cssProperty = this.propertyNameFromCSS(cssProperty);
+
+                        //should be states ?
+                        var state = this._stateForSelectorName(selectorName);
+                        if (state != null) {
+                            var declaration = this._getStylePropertyObject(state, cssProperty);
+                            declaration.value = this.initialValueForStyleableProperty(cssProperty);
+                        }
+                    }
+                }
+            }
+        }
+    },
+
+
+
     _executeCurrentStyle: {
         value: function(state) {
-            if (this._style == null)
-                return;
             if (state !== this._state)
                 return;
 
-            var style = this._style;
             if (this.styleableProperties != null) {
                 this.styleableProperties.forEach(function(property) {
-                    var declaration = this._getStylePropertyObject(style, state, property);
-                    var valueFound = false;
+                    var declaration = this._getStylePropertyObject(state, property);
                     if (declaration) {
                         if (declaration.value != null) {
                             this[property] = declaration.value;
@@ -603,7 +625,6 @@ exports.Component3D = Target.specialize( {
             var rule = this.retrieveCSSRule(selectorName);
             var state = this._stateForSelectorName(selectorName);
             if (rule) {
-                var style = this._createDefaultStyleIfNeeded();
                 if (rule.cssText) {
                     var cssDescription = CSSOM.parse(rule.cssText);
                     if (cssDescription) {
@@ -619,8 +640,52 @@ exports.Component3D = Target.specialize( {
         }
     },
 
+    _removeSelectorNamed: {
+        value: function(selectorName, appliedProperties) {
+            var rule = this.retrieveCSSRule(selectorName);
+            if (rule) {
+                if (rule.cssText) {
+                    var cssDescription = CSSOM.parse(rule.cssText);
+                    if (cssDescription) {
+                        var allRules = cssDescription.cssRules;
+                        allRules.forEach(function(styleRule) {
+                            this._removeStyleRule(selectorName, styleRule, appliedProperties);
+                        }, this);
+                    }
+                    var state = this._stateForSelectorName(selectorName);
+                    if (state === this._state)
+                        this._executeCurrentStyle(state);
+                }
+            }
+        }
+    },
+
+    _removeSelectorsForState: {
+        value: function(state) {
+            var values = this.classList.enumerate();
+            for (var i = 0 ; i < values.length ; i++) {
+                var selectorName = values[i][1];
+                if (this._stateForSelectorName(selectorName) === state) {
+                    var rule = this.retrieveCSSRule(selectorName);
+                    if (rule) {
+                        if (rule.cssText) {
+                            var cssDescription = CSSOM.parse(rule.cssText);
+                            if (cssDescription) {
+                                var allRules = cssDescription.cssRules;
+                                allRules.forEach(function(styleRule) {
+                                    this._removeStyleRule(selectorName, styleRule);
+                                }, this);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+
     classListDidChange: {
         value: function() {
+            var self = this;
             if (this.classList) {
                 var appliedProperties = new Set();
                 var values = this.classList.enumerate();
@@ -630,7 +695,7 @@ exports.Component3D = Target.specialize( {
                 }
 
                 this.styleableProperties.forEach(function(property) {
-                    if (appliedProperties.has(property) == false) {
+                    if (appliedProperties.has(property) === false) {
                         this[property] = this.initialValueForStyleableProperty(property);
                     }
                 }, this);
@@ -716,9 +781,9 @@ exports.Component3D = Target.specialize( {
             }
             //when something is removed is resync all
             if (minus != null) {
-                if (minus.length > 0) {
-                    this.classListDidChange();
-                }
+                minus.forEach(function(selectorName) {
+                    this._removeSelectorNamed(selectorName);
+                }, this);
             }
         }
     },
@@ -758,8 +823,6 @@ exports.Component3D = Target.specialize( {
 
             var state = this.__STYLE_DEFAULT__;
 
-            //console.log("name:"+name);
-
             switch (name) {
                 case this._ENTER:
                     state = "hover";
@@ -780,7 +843,14 @@ exports.Component3D = Target.specialize( {
             }
 
             if (state !== this._state) {
+                this._removeSelectorsForState(this._state);
                 this._state = state;
+                var values = this.classList.enumerate();
+                for (var i = 0 ; i < values.length ; i++) {
+                    var selectorName = values[i][1];
+                    this._applySelectorNamed(selectorName);
+                }
+
                 this._executeCurrentStyle(state);
             }
         }
