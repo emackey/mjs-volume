@@ -509,6 +509,7 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
                 */
 
                 //FIXME: use from input texture (target, format, internal format)
+                //gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
                 if (usesMipMaps) {
                     gl.generateMipmap(gl.TEXTURE_2D);
@@ -915,31 +916,37 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
 
                     //FIXME: make a clever handling of states, For now this is incomplete and inefficient.(but robust)
                     if (states) {
-                        if (states.blendEnable === 1)
-                            blending = 1;
-                        if (states.depthTestEnable === 0)
-                            depthTest = 0;
-                        if (states.depthMask === 0)
-                            depthMask = 0;
-                        if (states.cullFaceEnable === 0)
-                            cullFaceEnable = 0;
-                        if(states.blendEquation) {
+                        if (states.blendEnable != null) {
+                            blending = states.blendEnable;
+                        }
+                        if (states.depthTestEnable != null) {
+                            depthTest = states.depthTestEnable;
+                        }
+                        if (states.depthMask != null) {
+                            depthMask = states.depthMask;
+                        }
+                        if (states.cullFaceEnable != null) {
+                            cullFaceEnable = states.cullFaceEnable;
+                        }
+                        if(states.blendEquation != null) {
                             var blendFunc = states.blendFunc;
-                            if (blendFunc) {
-                                if (blendFunc.sfactor)
+                            if (blendFunc != null) {
+                                if (blendFunc.sfactor != null)
                                     sfactor = blendFunc.sfactor;
-                                if (blendFunc.dfactor)
+                                if (blendFunc.dfactor != null)
                                     dfactor = blendFunc.dfactor;
                             }
                         }
                     }
 
-                    //this.setState(gl.DEPTH_TEST, depthTest);
+                    this.setState(gl.DEPTH_TEST, depthTest);
                     this.setState(gl.CULL_FACE, cullFaceEnable);
 
-                    //gl.depthMask(depthMask);
+                    gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+
+                    gl.depthMask(depthMask);
                     this.setState(gl.BLEND, blending);
-                    if (blending) {
+                    if (blending === 1) {
                         gl.blendEquation(blendEquation);
                         gl.blendFunc(sfactor, dfactor);
                     }
