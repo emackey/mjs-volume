@@ -702,14 +702,14 @@ exports.View = Component.specialize( {
             // here really don't do much other than trigger drawing. They listen on capture
             // to handle the event before the camera stopsPropagation (for whatever reason it does that)
             this.canvas.addEventListener('touchstart', this.start.bind(this), true);
-            document.addEventListener('touchend', this.end.bind(this), true);
-            document.addEventListener('touchcancel', this.end.bind(this), true);
-            document.addEventListener('touchmove', this.move.bind(this), true);
-            document.addEventListener('gesturechange', this, true);
+            this.canvas.addEventListener('touchend', this.end.bind(this), true);
+            this.canvas.addEventListener('touchcancel', this.end.bind(this), true);
+            this.canvas.addEventListener('touchmove', this.move.bind(this), true);
+            this.canvas.addEventListener('gesturechange', this, true);
             this.canvas.addEventListener('mousedown', this.start.bind(this), true);
-            document.addEventListener('mouseup', this.end.bind(this), true);
-            document.addEventListener('mousemove', this.move.bind(this), true);
-            document.addEventListener('wheel', this, true);
+            this.canvas.addEventListener('mouseup', this.end.bind(this), true);
+            this.canvas.addEventListener('mousemove', this.move.bind(this), true);
+            this.canvas.addEventListener('wheel', this, true);
         }
     },
 
@@ -752,7 +752,6 @@ exports.View = Component.specialize( {
                 if (this._previousHandledComponent != null)
                     this._previousHandledComponent.handleEventNamed(Component3D._TOUCH_UP);
                 this._eventType = -1;
-                return;
             }
 
             var component = null;
@@ -780,8 +779,10 @@ exports.View = Component.specialize( {
                     this._eventType = -1;
                 }
             } else if (this._eventType === this._TOUCH_DOWN) {
-                if (component != null)
+                if (component != null) {
                     component.handleEventNamed(Component3D._TOUCH_DOWN);
+                    this._eventType = -1;
+                }
             }
 
             this._previousHandledComponent = component;
@@ -817,7 +818,6 @@ exports.View = Component.specialize( {
 
     end:{
         value: function (event) {
-
             if (this._consideringPointerForPicking && event.target === this.canvas) {
                 event.preventDefault();
             }
