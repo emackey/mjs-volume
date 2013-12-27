@@ -599,7 +599,7 @@ exports.View = Component.specialize( {
                 this.canvas = WebGLDebugUtils.makeLostContextSimulatingCanvas(this.canvas);
             }
 
-            var webGLOptions = {  premultipliedAlpha: false, antialias: true, preserveDrawingBuffer: false };
+            var webGLOptions = {  premultipliedAlpha: true, antialias: true, preserveDrawingBuffer: false };
             var webGLContext =  this.canvas.getContext("experimental-webgl", webGLOptions) ||
                                 this.canvas.getContext("webgl", webGLOptions);
 
