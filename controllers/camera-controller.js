@@ -158,8 +158,17 @@ exports.CameraController = Montage.specialize( {
             distVec[1] = targetPosition[1] - eye[1];
             distVec[2] = targetPosition[2] - eye[2];
             var distance = vec3.length(distVec);
-            if (distance > this._minimalDistance)
+            if (distance > this._minimalDistance) {
                 this.viewPoint.glTFElement.transform.translation = eye;
+            } else {
+                var minimalDistance = (event.wheelDeltaY > 0) ? -this._minimalDistance : this._minimalDistance;
+
+                eye[0] = targetPosition[0] + direction[0] * minimalDistance;
+                eye[1] = targetPosition[1] + direction[1] * minimalDistance;
+                eye[2] = targetPosition[2] + direction[2] * minimalDistance;
+
+                this.viewPoint.glTFElement.transform.translation = eye;
+            }
         }
     },
 
