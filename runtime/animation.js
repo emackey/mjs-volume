@@ -309,7 +309,12 @@ var Channel = exports.Channel = Object.create(Base, {
 
                     var idx1 = lastKeyIndex * outputParameter.componentsPerAttribute;
                     var idx2 = idx1 + outputParameter.componentsPerAttribute;
-                    if (this.path == "rotation") {
+
+                    var path = this.path;
+                    if (path === "rotation") {
+                        //HACK: for now just handle rotation and convert as orientation
+                        path = "orientation";
+
                         var AXIS_ANGLE_INTERP = 0;
                         var AXIS_ANGLE_INTERP_NAIVE = 1;
                         var QUATERNION = 2;
@@ -393,7 +398,7 @@ var Channel = exports.Channel = Object.create(Base, {
                             interpolatedValue[i] = v1 + ((v2 - v1) * ratio);
                         }
                     }
-                    this.target.transform[this.path] = interpolatedValue;
+                    this.target.transform[path] = interpolatedValue;
                 }
             }
         }

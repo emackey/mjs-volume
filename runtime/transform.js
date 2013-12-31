@@ -33,7 +33,9 @@ var Transform = exports.Transform = Object.create(Base, {
     _dirtyAffines: { value: true, writable: true },
 
     _translation: { value: null, writable: true },
+    _orientation: { value: null, writable: true },
     _rotation: { value: null, writable: true },
+
     _scale: { value: null, writable: true },
 
     _id: { value: 0, writable: true },
@@ -63,7 +65,7 @@ var Transform = exports.Transform = Object.create(Base, {
 
             Utilities.interpolateVec(this._translation, to._translation, step, destination._translation);
             Utilities.interpolateVec(this._scale, to._scale, step, destination._scale);
-            Utilities.inverpolateAxisAngle(this._rotation, to._rotation, step, destination._rotation);
+            quat4.slerp(this._orientation, to._orientation, step, destination._orientation);
             //FIXME:breaks encapsulation
             destination._updateDirtyFlag(true);
         }
@@ -94,7 +96,7 @@ var Transform = exports.Transform = Object.create(Base, {
 
                 mat4.translate(this._intermediateMatrices[1], this._translation);
                 mat4.scale(this._intermediateMatrices[2], this._scale);
-                quat4.toMat4(this._rotation, this._intermediateMatrices[3]);
+                quat4.toMat4(this._orientation, this._intermediateMatrices[3]);
 
                 mat4.multiply(this._matrix, this._intermediateMatrices[1]);
                 mat4.multiply(this._matrix, this._intermediateMatrices[2]);
@@ -120,7 +122,7 @@ var Transform = exports.Transform = Object.create(Base, {
     _rebuildAffinesIfNeeded: {
         value: function() {
             if (this._dirtyAffines === true) {
-                Utilities.decomposeMat4(this.matrix, this._translation, this._rotation, this._scale);
+                Utilities.decomposeMat4(this.matrix, this._translation, this._orientation, this._scale);
                 this._dirtyAffines = false;
             }
         }
@@ -133,6 +135,16 @@ var Transform = exports.Transform = Object.create(Base, {
         }, get: function(value) {
             this._rebuildAffinesIfNeeded();
             return this._translation;
+        }
+    },
+
+    orientation : {
+        set: function(value ) {
+            this._orientation = value;
+            this._updateDirtyFlag(true);
+        }, get: function(value) {
+            this._rebuildAffinesIfNeeded();
+            return this._orientation;
         }
     },
 
@@ -159,7 +171,7 @@ var Transform = exports.Transform = Object.create(Base, {
     _commonInit: {
         value: function() {
             this.translation = vec3.createFrom(0,0,0);
-            this.rotation = vec4.createFrom(0,0,0,0);
+            this.orientation = vec4.createFrom(0,0,0,0);
             this.scale = vec3.createFrom(1,1,1);
             this.matrix = mat4.identity();
             this._id = Transform.bumpId();
@@ -175,7 +187,7 @@ var Transform = exports.Transform = Object.create(Base, {
             } else if (description.translation || description.rotation || description.scale) {
                 this.translation = description.translation ? vec3.create(description.translation) : vec3.createFrom(0,0,0);
                 var r = description.rotation;
-                this.rotation = r ?  quat4.fromAngleAxis(r[3], vec3.createFrom(r[0],r[1],r[2])) : vec4.createFrom(0,0,0,0);
+                this.orientation = r ?  quat4.fromAngleAxis(r[3], vec3.createFrom(r[0],r[1],r[2])) : vec4.createFrom(0,0,0,0);
                 this.scale = description.scale ? vec3.create(description.scale) : vec3.createFrom(1,1,1);
             } else {
                 this.matrix = mat4.identity();
@@ -210,8 +222,8 @@ var Transform = exports.Transform = Object.create(Base, {
                 transform.scale = vec3.createFrom(this._scale[0], this._scale[1], this._scale[2]);
             }
 
-            if (this._rotation) {
-                transform.rotation = quat4.create(this._rotation);
+            if (this._orientation) {
+                transform.orientation = quat4.create(this._orientation);
             }
 
             transform.matrix = mat4.create(this.matrix);
