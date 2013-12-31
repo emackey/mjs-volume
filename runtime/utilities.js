@@ -321,9 +321,9 @@ exports.Utilities = Object.create(Object.prototype, {
             var AXIS_ANGLE_INTERP = 0;
             var AXIS_ANGLE_INTERP_NAIVE = 1;
             var QUATERNION = 2;
-            var interpolationType = AXIS_ANGLE_INTERP_NAIVE;
-            var axisAngle1 = vec4.createFrom(from[0],from[1],from[2],from[3]);
-            var axisAngle2 = vec4.createFrom(to[0],to[1],to[2],to[3]);
+            var interpolationType = AXIS_ANGLE_INTERP;
+            var axisAngle1 = from;//vec4.createFrom(from[0],from[1],from[2],from[3]);
+            var axisAngle2 = to;//vec4.createFrom(to[0],to[1],to[2],to[3]);
             if (interpolationType == AXIS_ANGLE_INTERP) {
                 vec3.normalize(axisAngle1); //FIXME: do that upfront
                 vec3.normalize(axisAngle2);
