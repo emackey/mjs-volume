@@ -96,7 +96,15 @@ var Transform = exports.Transform = Object.create(Base, {
 
                 mat4.translate(this._intermediateMatrices[1], this._translation);
                 mat4.scale(this._intermediateMatrices[2], this._scale);
-                quat4.toMat4(this._orientation, this._intermediateMatrices[3]);
+
+                if (this._orientation != null)
+                    quat4.toMat4(this._orientation, this._intermediateMatrices[3]);
+                else if (this._rotation != null) {
+                    mat4.identity(this._intermediateMatrices[3]);
+                    mat4.rotate(this._intermediateMatrices[3], this._rotation[3], this._rotation);
+                } else {
+                    //should not reach
+                }
 
                 mat4.multiply(this._matrix, this._intermediateMatrices[1]);
                 mat4.multiply(this._matrix, this._intermediateMatrices[2]);
@@ -141,6 +149,7 @@ var Transform = exports.Transform = Object.create(Base, {
     orientation : {
         set: function(value ) {
             this._orientation = value;
+            this._rotation = null;
             this._updateDirtyFlag(true);
         }, get: function(value) {
             this._rebuildAffinesIfNeeded();
@@ -151,6 +160,7 @@ var Transform = exports.Transform = Object.create(Base, {
     rotation : {
         set: function(value ) {
             this._rotation = value;
+            this._orientation = null;
             this._updateDirtyFlag(true);
         }, get: function(value) {
             this._rebuildAffinesIfNeeded();
@@ -214,16 +224,20 @@ var Transform = exports.Transform = Object.create(Base, {
         value: function() {
             var transform = Object.create(Transform).init();
 
-            if (this._translation) {
-                transform.translation = vec3.createFrom(this._translation[0], this._translation[1], this._translation[2]);
+            if (this._translation != null) {
+                transform.translation = vec3.create(this._translation);
             }
 
-            if (this._scale) {
-                transform.scale = vec3.createFrom(this._scale[0], this._scale[1], this._scale[2]);
+            if (this._scale != null) {
+                transform.scale = vec3.create(this._scale);
             }
 
-            if (this._orientation) {
+            if (this._orientation != null) {
                 transform.orientation = quat4.create(this._orientation);
+            }
+
+            if (this._rotation != null) {
+                transform.rotation = vec4.create(this._rotation);
             }
 
             transform.matrix = mat4.create(this.matrix);
