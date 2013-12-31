@@ -130,6 +130,7 @@ var Transform = exports.Transform = Object.create(Base, {
     _rebuildAffinesIfNeeded: {
         value: function() {
             if (this._dirtyAffines === true) {
+                this._rotation = null;
                 Utilities.decomposeMat4(this.matrix, this._translation, this._orientation, this._scale);
                 this._dirtyAffines = false;
             }
