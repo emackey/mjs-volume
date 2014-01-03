@@ -471,8 +471,8 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
 
                         var mid = [
                             (bbox[0][0] + bbox[1][0]) * originVector[0],
-                            (bbox[0][1] + bbox[1][1]) * originVector[0],
-                            (bbox[0][2] + bbox[1][2]) * originVector[0]];
+                            (bbox[0][1] + bbox[1][1]) * originVector[1],
+                            (bbox[0][2] + bbox[1][2]) * originVector[2]];
 
                         var tr1 = vec3.create(mid);
                         mat4.translate(res, tr1);
