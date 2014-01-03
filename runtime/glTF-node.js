@@ -442,7 +442,7 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
 
     _worldMatrix: { value: null, writable:true },
 
-    _offsetMatrix: { value: null, writable:true },
+    _offsetTransform: { value: null, writable:true },
 
     _originVector: { value: null, writable:true },
 
@@ -454,7 +454,7 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
                     mat4.multiply(this.parent.worldMatrix, this.transform.matrix, this._worldMatrix);
                     this._worldMatrixIsDirty = false;
                 }
-                if (this._offsetMatrix != null) {
+                if (this._offsetTransform != null) {
                     var bbox = this.getBoundingBox(false);
                     if (bbox != null) {
                         //this is now just for testing purposes, not optimized * at all *
@@ -476,7 +476,7 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
 
                         var tr1 = vec3.create(mid);
                         mat4.translate(res, tr1);
-                        mat4.multiply(res, this._offsetMatrix, res2);
+                        mat4.multiply(res, this._offsetTransform.matrix, res2);
                         mat4.multiply(this._worldMatrix,  res2, res);
                         tr1[0] = -tr1[0];
                         tr1[1] = -tr1[1];

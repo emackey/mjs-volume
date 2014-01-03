@@ -294,30 +294,33 @@ exports.Component3D = Target.specialize( {
         }
     },
 
-    _createMatrixFromCSSTransformDeclaration: {
+    _createTransformFromCSS: {
         value: function(declaration) {
 
-            function _RotateWithCSSAngleAxis(mat, floatValues) {
-                var PI = 3.1415926535;
-                var DEG_TO_RAD = PI/180.0;
-                floatValues[3] *= DEG_TO_RAD;
-                mat4.rotate(mat, floatValues[3], floatValues);
-            }
+            var PI = 3.1415926535;
+            var DEG_TO_RAD = PI/180.0;
 
+            var transform = Object.create(Transform).init();
+            var rotation, translation, scale;
             var matrix = mat4.identity();
             var index = 0;
             declaration = declaration.trim();
             var end = 0, command;
 
+            var scalesCount = 0;
+            var rotationsCount = 0;
+            var translationsCount = 0;
+            var matricesCount = 0;
+
             while (end !== -1) {
                 end = declaration.indexOf("(", index);
-                if (end == -1)
+                if (end === -1)
                     break;
                 command = declaration.substring(index, end);
                 index = end + 1;
 
                 end = declaration.indexOf(")", index);
-                if (end == -1)
+                if (end === -1)
                     break;
                 var valuesDec = declaration.substring(index, end);
 
@@ -339,66 +342,118 @@ exports.Component3D = Target.specialize( {
                                 m[8], m[9], m[10], m[11],
                                 m[12], m[13], m[14], m[15]);
                             mat4.multiply(matrix, mat);
+                            matricesCount++;
                         }
                         break;
                     case "translate3d":
                         if (this._checkTransformConsistency(floatValues, 3)) {
+                            if (translationsCount === 0) 
+                                transform.translation = vec3.create(floatValues);
                             mat4.translate(matrix, floatValues);
+                            translationsCount++;
                         }
                         break;
                     case "translateX":
-                        if (this._checkTransformConsistency(floatValues, 3)) {
-                            mat4.translate(matrix, [floatValues[0], 0, 0]);
+                        if (this._checkTransformConsistency(floatValues, 1)) {
+                            translation = [floatValues[0], 0, 0];
+                            if (translationsCount === 0) 
+                                transform.translation = vec3.create(translation);
+                            mat4.translate(matrix, translation);
+                            translationsCount++;
                         }
                         break;
                     case "translateY":
-                        if (this._checkTransformConsistency(floatValues, 3)) {
-                            mat4.translate(matrix, [0, floatValues[0], 0]);
+                        if (this._checkTransformConsistency(floatValues, 1)) {
+                            translation = [0, floatValues[0], 0];
+                            if (translationsCount === 0) 
+                                transform.translation = vec3.create(translation);
+                            mat4.translate(matrix, translation);
+                            translationsCount++;
                         }
                         break;
                     case "translateZ":
-                        if (this._checkTransformConsistency(floatValues, 3)) {
-                            mat4.translate(matrix, [0, 0, floatValues[0]]);
+                        if (this._checkTransformConsistency(floatValues, 1)) {
+                            translation = [0, 0, floatValues[0]];
+                            if (translationsCount === 0) 
+                                transform.translation = vec3.create(translation);
+                            mat4.translate(matrix, translation);
+                            translationsCount++;
                         }
                         break;
                     case "scale3d":
                         if (this._checkTransformConsistency(floatValues, 3)) {
+                            if (scalesCount === 0) 
+                                transform.scale = vec3.create(floatValues);
                             mat4.scale(matrix, floatValues);
+                            translationsCount++;
                         }
                         break;
                     case "scaleX":
-                        if (this._checkTransformConsistency(floatValues, 3)) {
-                            mat4.scale(matrix, [floatValues[0], 1, 1]);
+                        if (this._checkTransformConsistency(floatValues, 1)) {
+                            scale = [floatValues[0], 1, 1];
+                            if (scalesCount === 0) 
+                                transform.scale = vec3.create(scale);
+                            mat4.scale(matrix, scale);
+                            scalesCount++;
                         }
                         break;
                     case "scaleY":
-                        if (this._checkTransformConsistency(floatValues, 3)) {
-                            mat4.scale(matrix, [1, floatValues[0], 1]);
+                        if (this._checkTransformConsistency(floatValues, 1)) {
+                            scale = [1, floatValues[0], 1];
+                            if (scalesCount === 0) 
+                                transform.scale = vec3.create(scale);
+                            mat4.scale(matrix, scale);
+                            scalesCount++;
                         }
                         break;
                     case "scaleZ":
-                        if (this._checkTransformConsistency(floatValues, 3)) {
-                            mat4.scale(matrix, [1, 1, floatValues[0]]);
+                        if (this._checkTransformConsistency(floatValues, 1)) {
+                            scale = [1, 1, floatValues[0]];
+                            if (scalesCount === 0) 
+                                transform.scale = vec3.create(scale);
+                            mat4.scale(matrix, scale);
+                            scalesCount++;
                         }
                         break;
                     case "rotate3d":
                         if (this._checkTransformConsistency(floatValues, 4)) {
-                            _RotateWithCSSAngleAxis(matrix, floatValues);
+                            floatValues[3] *= DEG_TO_RAD;
+                            if (rotationsCount === 0)
+                                transform.rotation = floatValues;
+                            mat4.rotate(matrix, floatValues[3], floatValues);
+                            rotationsCount++;
                         }
                         break;
                     case "rotateX":
                         if (this._checkTransformConsistency(floatValues, 1)) {
-                            _RotateWithCSSAngleAxis(matrix, [1, 0, 0, floatValues[0]]);
+                            rotation =  [1, 0, 0, floatValues[0]];
+                            rotation[3] *= DEG_TO_RAD;
+                            if (rotationsCount === 0)
+                                transform.rotation = rotation;
+                            mat4.rotate(matrix, rotation[3], rotation);
+                            rotationsCount++;
                         }
+
                         break;
                     case "rotateY":
                         if (this._checkTransformConsistency(floatValues, 1)) {
-                            _RotateWithCSSAngleAxis(matrix, [0, 1, 0, floatValues[0]]);
+                            rotation =  [0, 1, 0, floatValues[0]];
+                            rotation[3] *= DEG_TO_RAD;
+                            if (rotationsCount === 0) 
+                                transform.rotation = rotation;
+                            mat4.rotate(matrix, rotation[3], rotation);
+                            rotationsCount++;
                         }
                         break;
                     case "rotateZ":
                         if (this._checkTransformConsistency(floatValues, 1)) {
-                            _RotateWithCSSAngleAxis(matrix, [0, 0, 1, floatValues[0]]);
+                            rotation =  [0, 0, 1, floatValues[0]];
+                            rotation[3] *= DEG_TO_RAD;
+                            if (rotationsCount === 0) {
+                                transform.rotation = rotation;
+                            }
+                            mat4.rotate(matrix, rotation[3], rotation);
+                            rotationsCount++;
                         }
                         break;
                     case "perspective":
@@ -409,7 +464,16 @@ exports.Component3D = Target.specialize( {
                         break;
                 }
             }
-            return matrix;
+            /*
+                if we have more than exactly one scale / one rotation / one translation, 
+                then we take the matrix we just built up
+                Otherwise we just return the transform that has of the advantage of holding axis angle
+                can represent any rotation angle...
+            */
+            if ((scalesCount > 1) || (rotationsCount > 1) || (translationsCount > 1) || (matricesCount > 0)) {
+                transform.matrix = matrix;
+            }
+            return transform;
         }
     },
 
@@ -500,9 +564,9 @@ exports.Component3D = Target.specialize( {
                     }
                 }
                     break;
-                case "offsetMatrix":
+                case "offsetTransform":
                     if (typeof cssValue === "string") {
-                        declaration.value = this._createMatrixFromCSSTransformDeclaration(cssValue);
+                        declaration.value = this._createTransformFromCSS(cssValue);
                     } else {
                         declaration.value = cssValue;
                     }
@@ -541,7 +605,7 @@ exports.Component3D = Target.specialize( {
             //FIXME: we keep this intermediate step as a placeholder to switch between
             //offset or transform some pending CSS verification in test-apps to validate what to do there.
             if (cssProperty === "transform") {
-                cssProperty = "offsetMatrix";
+                cssProperty = "offsetTransform";
             }
             if (cssProperty === "transform-origin") {
                 cssProperty = "originVector";

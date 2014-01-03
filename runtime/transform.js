@@ -30,7 +30,7 @@ var Transform = exports.Transform = Object.create(Base, {
     _matrix: { value: null, writable: true },
 
     _dirty: { value: true, writable: true },
-    _dirtyAffines: { value: true, writable: true },
+    _dirtyAffines: { value: false, writable: true },
 
     _translation: { value: null, writable: true },
     _orientation: { value: null, writable: true },
@@ -59,13 +59,31 @@ var Transform = exports.Transform = Object.create(Base, {
 
     interpolateToTransform: {
         value: function(to, step, destination) {
-            step = Utilities.easeOut(step);
             this._rebuildAffinesIfNeeded();
             to._rebuildAffinesIfNeeded();
 
             Utilities.interpolateVec(this._translation, to._translation, step, destination._translation);
             Utilities.interpolateVec(this._scale, to._scale, step, destination._scale);
-            quat4.slerp(this._orientation, to._orientation, step, destination._orientation);
+            if (to._rotation != null) {
+                var destinationVec = vec4.create();
+                var sourceVec = this._rotation;
+                if (sourceVec == null) {
+                    sourceVec = vec4.create();
+                    quat4.toAngleAxis(this._orientation, sourceVec);
+                    //if (sourceVec[3] === 0) {
+                    //    if ((sourceVec[0] === 1) && (sourceVec[1] === 0) && (sourceVec[2] === 0)) {
+                    //        sourceVec[0] = destinationVec[0];
+                    //        sourceVec[1] = destinationVec[1];
+                    //        sourceVec[2] = destinationVec[2];
+                    //    }
+                   // }
+                }
+
+                Utilities.interpolateVec(sourceVec, to._rotation, step, destinationVec);
+                destination.rotation = destinationVec;
+            } else {
+                quat4.slerp(this._orientation, to._orientation, step, destination._orientation);
+            }
             //FIXME:breaks encapsulation
             destination._updateDirtyFlag(true);
         }
@@ -97,14 +115,12 @@ var Transform = exports.Transform = Object.create(Base, {
                 mat4.translate(this._intermediateMatrices[1], this._translation);
                 mat4.scale(this._intermediateMatrices[2], this._scale);
 
-                if (this._orientation != null)
-                    quat4.toMat4(this._orientation, this._intermediateMatrices[3]);
-                else if (this._rotation != null) {
+                if (this._rotation != null) {
                     mat4.identity(this._intermediateMatrices[3]);
                     mat4.rotate(this._intermediateMatrices[3], this._rotation[3], this._rotation);
                 } else {
-                    //should not reach
-                }
+                    quat4.toMat4(this._orientation, this._intermediateMatrices[3]);
+                } 
 
                 mat4.multiply(this._matrix, this._intermediateMatrices[1]);
                 mat4.multiply(this._matrix, this._intermediateMatrices[2]);
@@ -130,7 +146,7 @@ var Transform = exports.Transform = Object.create(Base, {
     _rebuildAffinesIfNeeded: {
         value: function() {
             if (this._dirtyAffines === true) {
-                this._rotation = null;
+                //this._rotation = null;
                 Utilities.decomposeMat4(this.matrix, this._translation, this._orientation, this._scale);
                 this._dirtyAffines = false;
             }
@@ -149,8 +165,8 @@ var Transform = exports.Transform = Object.create(Base, {
 
     orientation : {
         set: function(value ) {
+            //this._rotation = null;
             this._orientation = value;
-            this._rotation = null;
             this._updateDirtyFlag(true);
         }, get: function(value) {
             this._rebuildAffinesIfNeeded();
@@ -160,8 +176,8 @@ var Transform = exports.Transform = Object.create(Base, {
 
     rotation : {
         set: function(value ) {
+            //this._orientation = null;
             this._rotation = value;
-            this._orientation = null;
             this._updateDirtyFlag(true);
         }, get: function(value) {
             this._rebuildAffinesIfNeeded();

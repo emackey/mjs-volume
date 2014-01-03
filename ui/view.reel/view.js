@@ -338,6 +338,7 @@ exports.View = Component.specialize( {
                             viewPointAnimationStep.from = Number(0);
                             viewPointAnimationStep.to = Number(1);
                             viewPointAnimationStep.duration = 1000;
+                            viewPointAnimationStep.timingFunction = "ease-out";
 
                             viewPointAnimationStep.extras["previousViewPoint"] = previousViewPoint;
 

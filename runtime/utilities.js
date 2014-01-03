@@ -476,48 +476,6 @@ exports.Utilities = Object.create(Object.prototype, {
                 quat4.normalize(rotation);
             }
         }
-    },
-
-    easeOut: {
-        value: function(x) {
-            //actually, just ease out
-            var t = x;
-            var start = 0;
-            var end = 1;
-
-            t--;
-            y =  end*(t * t * t + 1.) + start - 1.;
-            y = -y;
-            y = 1 - y;
-            return y;
-
-            /*
-             t *= 2;
-             var y;
-             if (t < 1.) {
-             y = end/2. * t * t + start - 1.;
-
-             } else {
-
-             t--;
-             y= -end/2. * (t*(t-2) - 1) + start - 1.;
-             }
-             y = -y;
-
-             y = 1 - y;
-             return y;
-             */
-            /*
-             t *= 2.;
-             if (t < 1.)  {
-             y = end/2 * t * t * t + start - 1.;
-             } else {
-             t -= 2;
-             y = end/2*(t * t * t + 2) + start - 1.;
-             }
-             */
-            //return y;
-        }
     }
 
 });
