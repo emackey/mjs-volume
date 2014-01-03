@@ -867,10 +867,12 @@ exports.Component3D = Target.specialize( {
                         } else if (styleSheet.rules) {                                      // Browser usses rules?
                             cssRule = styleSheet.rules[ii];            // Yes IE style.
                         }                                             // End IE check.
-                        if (cssRule)  {                               // If we found a rule...
-                            if (cssRule.selectorText.toLowerCase() == ruleName) { //  match ruleName?
-                                return cssRule;                      // return the style object.
-                            }                                          // End found rule name
+                        if (cssRule)  {   
+                            if (cssRule.selectorText) {
+                                if (cssRule.selectorText.toLowerCase() == ruleName) { //  match ruleName?
+                                    return cssRule;                      // return the style object.
+                                }                                          // End found rule name
+                            }                            // If we found a rule...
                         }                                             // end found cssRule
                         ii++;                                         // Increment sub-counter
                     } while (cssRule)                                // end While loop
