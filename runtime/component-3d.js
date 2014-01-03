@@ -864,7 +864,7 @@ exports.Component3D = Target.specialize( {
                     do {                                             // For each rule in stylesheet
                         if (styleSheet.cssRules) {                    // Browser uses cssRules?
                             cssRule = styleSheet.cssRules[ii];         // Yes --Mozilla Style
-                        } else {                                      // Browser usses rules?
+                        } else if (styleSheet.rules) {                                      // Browser usses rules?
                             cssRule = styleSheet.rules[ii];            // Yes IE style.
                         }                                             // End IE check.
                         if (cssRule)  {                               // If we found a rule...
@@ -890,6 +890,9 @@ exports.Component3D = Target.specialize( {
             switch (name) {
                 case this._ENTER:
                     state = "hover";
+                    var hoverEvent = document.createEvent("CustomEvent");
+                    hoverEvent.initCustomEvent("hover", true, true, null);
+                    this.dispatchEvent(hoverEvent);
                     break;
                 case this._EXIT:
                     state = this.__STYLE_DEFAULT__; //this is probably wrong - what happens if active is on going too ?
