@@ -770,6 +770,7 @@ exports.View = Component.specialize( {
                 (component !== this._previousHandledComponent)) {
                 if (this._previousHandledComponent != null) {
                     this._previousHandledComponent.handleEventNamed(Component3D._EXIT);
+                    this.element.style.cursor="default";            
                 }
             }
             if ((this._eventType === this._TOUCH_MOVE) &&

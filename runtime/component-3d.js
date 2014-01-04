@@ -284,13 +284,13 @@ exports.Component3D = Target.specialize( {
 
                 transformOrigin[0] = parseFloat(components[0]);
                 transformOrigin[1] = parseFloat(components[1]);
-                transformOrigin[2] = 50;
+                transformOrigin[2] = 0;
 
                 return transformOrigin;
             }
 
 
-            return vec3.createFrom(50,50,50);
+            return vec3.createFrom(50,50,0);
         }
     },
 
@@ -668,8 +668,11 @@ exports.Component3D = Target.specialize( {
 
     _executeCurrentStyle: {
         value: function(state) {
-            if (state !== this._state)
-                return;
+            if (state != this.__STYLE_DEFAULT__) {
+                if (state != this._state) {
+                    return;
+                }
+            }
 
             if (this.styleableProperties != null) {
                 this.styleableProperties.forEach(function(property) {
@@ -686,6 +689,7 @@ exports.Component3D = Target.specialize( {
 
     _applySelectorNamed: {
         value: function(selectorName, appliedProperties) {
+            console.log("apply selector named:"+ selectorName);
             var rule = this.retrieveCSSRule(selectorName);
             var state = this._stateForSelectorName(selectorName);
             if (rule) {
@@ -697,8 +701,7 @@ exports.Component3D = Target.specialize( {
                             this._applyStyleRule(selectorName, styleRule, appliedProperties);
                         }, this);
                     }
-                    if (state === this._state)
-                        this._executeCurrentStyle(state);
+                    this._executeCurrentStyle(state);
                 }
             }
         }
@@ -717,8 +720,7 @@ exports.Component3D = Target.specialize( {
                         }, this);
                     }
                     var state = this._stateForSelectorName(selectorName);
-                    if (state === this._state)
-                        this._executeCurrentStyle(state);
+                    this._executeCurrentStyle(state);
                 }
             }
         }
@@ -912,7 +914,8 @@ exports.Component3D = Target.specialize( {
             }
 
             if (state !== this._state) {
-                this._removeSelectorsForState(this._state);
+                if (this._state != this.__STYLE_DEFAULT__)
+                    this._removeSelectorsForState(this._state);
                 this._state = state;
                 var values = this.classList.enumerate();
                 for (var i = 0 ; i < values.length ; i++) {

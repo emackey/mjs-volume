@@ -160,6 +160,10 @@ exports.Node = Component3D.specialize( {
 
     offsetTransform: {
         set: function(value) {
+            if (mat4.equal(value, this._offsetMatrix)) {
+                return;
+            }
+
             if (this.glTFElement) {
                 var animationManager = this.scene.glTFElement.animationManager;
                 animationManager.removeAnimationWithTargetAndPath(this, "offsetTransform_animationSetter");
@@ -247,7 +251,7 @@ exports.Node = Component3D.specialize( {
             } else if (property === "offsetTransform") {
                 return Object.create(Transform).init();
             } else if (property === "originVector") {
-                return vec3.createFrom(50, 50, 50);
+                return vec3.createFrom(50, 50, 0);
             }
         }
     }
