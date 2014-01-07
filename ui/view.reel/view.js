@@ -346,6 +346,11 @@ exports.View = Component.specialize( {
 
                             //FIXME: This is an internal detail exposed for now
                             viewPointAnimationStep.animationWasAddedToTarget();
+
+                            var self = this;
+                            setTimeout(function() {
+                                self.element.style.cursor="default";            
+                            }, 100);
                         }
                     }
                 }
