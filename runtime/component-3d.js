@@ -678,7 +678,6 @@ exports.Component3D = Target.specialize( {
     _removeStyleRule: {
         value: function(selectorName, styleRule) {
             if (styleRule.style) {
-
                 var length = styleRule.style.length;
                 if (length > 0) {
                     for (var i = 0 ; i < length ; i++) {
@@ -731,6 +730,14 @@ exports.Component3D = Target.specialize( {
         }
     },
 
+    _applyClassNamed: {
+        value: function(className, appliedProperties) {
+            this._applySelectorNamed("." + className, appliedProperties);
+            this._applySelectorNamed("." + className + ":hover", appliedProperties);
+            this._applySelectorNamed("." + className + ":active", appliedProperties);
+        }
+    },
+
     _removeSelectorNamed: {
         value: function(selectorName, appliedProperties) {
             var cssDescription = this.retrieveCSSRule(selectorName);
@@ -739,6 +746,14 @@ exports.Component3D = Target.specialize( {
                 var state = this._stateForSelectorName(selectorName);
                 this._executeCurrentStyle(state);
             }
+        }
+    },
+
+    _removeClassNamed: {
+        value: function(className, appliedProperties) {
+            this._removeSelectorNamed("." + className, appliedProperties);
+            this._removeSelectorNamed("." + className + ":hover", appliedProperties);
+            this._removeSelectorNamed("." + className + ":active", appliedProperties);
         }
     },
 
@@ -765,7 +780,7 @@ exports.Component3D = Target.specialize( {
                 var values = this.classList.enumerate();
                 for (var i = 0 ; i < values.length ; i++) {
                     var selectorName = values[i][1];
-                    this._applySelectorNamed(selectorName, appliedProperties);
+                    this._applyClassNamed(selectorName, appliedProperties);
                 }
 
                 this.styleableProperties.forEach(function(property) {
@@ -850,13 +865,13 @@ exports.Component3D = Target.specialize( {
             //on plus we stack classes
             if (plus != null) {
                 plus.forEach(function(selectorName) {
-                    this._applySelectorNamed(selectorName);
+                    this._applyClassNamed(selectorName);
                 }, this);
             }
             //when something is removed is resync all
             if (minus != null) {
                 minus.forEach(function(selectorName) {
-                    this._removeSelectorNamed(selectorName);
+                    this._removeClassNamed(selectorName);
                 }, this);
             }
         }
@@ -927,7 +942,7 @@ exports.Component3D = Target.specialize( {
                 var values = this.classList.enumerate();
                 for (var i = 0 ; i < values.length ; i++) {
                     var selectorName = values[i][1];
-                    this._applySelectorNamed(selectorName);
+                    this._applyClassNamed(selectorName);
                 }
 
                 this._executeCurrentStyle(state);
