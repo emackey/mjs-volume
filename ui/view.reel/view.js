@@ -143,7 +143,6 @@ exports.View = Component.specialize( {
             if (this.getResourceManager()) {
                 this.getResourceManager().reset();
             }
-
             this._firstFrameDidRender = false;
 
             if (this.delegate) {
@@ -532,6 +531,7 @@ exports.View = Component.specialize( {
 
             if (this.scene) {
                 this.scene.dispatchEventNamed("enteredDocument", true, false, this);
+                this.scene.loadCSSStyles();
             }
 
             this.element.addEventListener('wheel', function (event) {
@@ -556,7 +556,6 @@ exports.View = Component.specialize( {
             var composer = this.translateComposer;
 
             composer.addEventListener("translate", function(event) {
-
                 if ((self.allowsViewPointControl == true) && (self.scene != null)) {
                     if (self.scene.rootNode) {
                         self.cameraController.node = self.scene.rootNode;
@@ -567,7 +566,6 @@ exports.View = Component.specialize( {
             });
 
             composer.addEventListener('translateStart', function (event) {
-
                 if ((self.allowsViewPointControl == true) && (self.scene != null)) {
                     if (self.scene.rootNode) {
                         self.cameraController.node = self.scene.rootNode;

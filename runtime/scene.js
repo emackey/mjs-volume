@@ -39,6 +39,8 @@ exports.Scene = Target.specialize( {
 
     _resourcesLoaded: { value: false, writable: true },
 
+    _glTFElement: { value: null, writable: true },
+
     _rootNode: { value: null, writable: true },
 
     rootNode: {
@@ -75,7 +77,67 @@ exports.Scene = Target.specialize( {
         }
     },
 
-    status: { value: 0, writable:true},
+    status: { value: 0, writable: true},
+
+    styleSheetsLoaded: { value: false, writable: true},
+
+    styleSheets: { value: null, writable: true},
+
+    loadCSSStyles: {
+        value: function() {
+            if (document.styleSheets == null)
+                return;
+            var packages = Object.keys(require.packages);
+            var styleSheetsLoaded = 0;
+            var styleSheetsCount = document.styleSheets.length;
+            var i;
+            var styleSheet;
+            var styleSheets = [];
+            this.styleSheets = {};
+            
+            for (i = 0; i < styleSheetsCount; i++) {    
+                styleSheet = document.styleSheets[i]; 
+                if (styleSheet.href != null) {
+                    if (styleSheet.href.indexOf(packages[0]) != -1) {
+                        //HACK: packages[0] is guaranted to be the entry point
+                         //we just want the CSS from this project but not the ones from its dependencies
+                        if (styleSheet.href.indexOf(packages[0] + "node_modules") == -1) {
+                            styleSheets.push(styleSheet);
+                        }
+                    }
+                }  
+            }
+
+            styleSheetsCount = styleSheets.length;
+            if (styleSheetsCount === 0) {
+                this.styleSheetsLoaded = true;
+                return;
+            }
+
+            styleSheets.forEach(function(styleSheet) {
+                    var self = this;
+                    //FIXME: handle error
+                    var cssPath = styleSheet.href;
+                    var cssXHR = new XMLHttpRequest();
+                    cssXHR.open("GET", cssPath, true);
+                    cssXHR.onreadystatechange = function() {
+                        if (cssXHR.readyState == 4) {
+                            if (cssXHR.status == 200) {
+                                var cssDescription = CSSOM.parse(cssXHR.responseText);
+                                self.styleSheets[styleSheet.href] = cssDescription;
+                                styleSheetsLoaded++;  
+                                if (styleSheetsLoaded === styleSheetsCount) {
+                                    self.dispatchEventNamed("styleSheetsDidLoad", true, false, self);
+                                }                              
+                            }
+                        }
+                    }
+                    cssXHR.send(null);
+            }, this);
+
+            return false;                                          
+        }
+    },
 
     path: {
         set: function(value) {
@@ -135,18 +197,6 @@ exports.Scene = Target.specialize( {
             }
 
             return this._prepareToRenderDefer.promise;
-        }
-    },
-
-    _styleSheets: { value: null,  writable: true },
-
-    styleSheets: {
-        get: function() {
-            return this._styleSheets;
-        },
-
-        set: function(value) {
-            this._styleSheets = value;
         }
     },
 

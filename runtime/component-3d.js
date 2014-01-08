@@ -58,7 +58,6 @@ exports.Component3D = Target.specialize( {
 
     handleEnteredDocument: {
         value: function() {
-            this.classListDidChange();
         }
     },
 
@@ -171,20 +170,12 @@ exports.Component3D = Target.specialize( {
         }
     },
 
-    handleStyleSheetsChange: {
-        value: function(value, key, object) {
-            var self = this;
-            setTimeout(function() {
-                self.scene.removeOwnPropertyChangeListener(key, self);
-            }, 1);
-        }
-    },
-
     _sceneDidChange: {
         value: function() {
             this.resolveIdIfNeeded();
             if (this.scene) {
                 this.scene.addEventListener("enteredDocument", this);
+                this.scene.addEventListener("styleSheetsDidLoad", this);
             }
         }
     },
@@ -482,11 +473,9 @@ exports.Component3D = Target.specialize( {
             //the property is handled up front
             var transition = {};
             var parsingState = ["duration", "timing-function", "delay"];
-
             //http://www.w3.org/TR/css3-transitions/#transition-timing-function-property
             // + need to handle steps () and cubic-bezier
             var timingFunctions = ["ease", "linear", "ease-in", "ease-out", "ease-in-out", "step-start"];
-
             var parsingStateIndex = 0;
             //each component is optional here but there is an order
             transitionComponents.forEach(function (transitionComponent) {
@@ -620,21 +609,51 @@ exports.Component3D = Target.specialize( {
             if (styleRule.style) {
                 var length = styleRule.style.length;
                 if (length > 0) {
+                    var transition = null;
                     for (var i = 0 ; i < length ; i++) {
                         var cssProperty = styleRule.style[i];
                         var cssValue = styleRule.style[cssProperty];
 
                         cssProperty = this.propertyNameFromCSS(cssProperty);
 
-                        //should be states ?
-                        var state = this._stateForSelectorName(selectorName);
-                        if (state != null) {
-                            if (this._applyCSSPropertyWithValueForState(state, cssProperty, cssValue)) {
-                                if (appliedProperties != null) {
-                                    appliedProperties.add(cssProperty);
+                        if (cssProperty.indexOf("transition-") != -1) {
+                            if (transition == null) {
+                                transition = {};
+                            }
+                            transition[cssProperty] = cssValue;
+                        } else {
+                            //should be states ?
+                            var state = this._stateForSelectorName(selectorName);
+                            if (state != null) {
+                                if (this._applyCSSPropertyWithValueForState(state, cssProperty, cssValue)) {
+                                    if (appliedProperties != null) {
+                                        appliedProperties.add(cssProperty);
+                                    }
                                 }
                             }
                         }
+
+                        if (transition != null) {
+                            cssProperty = "transition";
+                            //build up shorthand version of transition
+                            var shortHandTransition = "";
+                            if (transition["transition-property"] != null) {
+                                shortHandTransition += transition["transition-property"];
+                                shortHandTransition += " ";
+                                if (transition["transition-duration"] != null) {
+                                    shortHandTransition += transition["transition-duration"];
+                                }
+                                var state = this._stateForSelectorName(selectorName);
+                                if (state != null) {
+                                    if (this._applyCSSPropertyWithValueForState(state, cssProperty, shortHandTransition)) {
+                                        if (appliedProperties != null) {
+                                            appliedProperties.add(cssProperty);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                     }
                 }
             }
@@ -643,7 +662,9 @@ exports.Component3D = Target.specialize( {
 
     _removeStyleRule: {
         value: function(selectorName, styleRule) {
+            console.log("remove:"+selectorName);
             if (styleRule.style) {
+
                 var length = styleRule.style.length;
                 if (length > 0) {
                     for (var i = 0 ; i < length ; i++) {
@@ -663,8 +684,6 @@ exports.Component3D = Target.specialize( {
             }
         }
     },
-
-
 
     _executeCurrentStyle: {
         value: function(state) {
@@ -689,39 +708,26 @@ exports.Component3D = Target.specialize( {
 
     _applySelectorNamed: {
         value: function(selectorName, appliedProperties) {
-            console.log("apply selector named:"+ selectorName);
-            var rule = this.retrieveCSSRule(selectorName);
-            var state = this._stateForSelectorName(selectorName);
-            if (rule) {
-                if (rule.cssText) {
-                    var cssDescription = CSSOM.parse(rule.cssText);
-                    if (cssDescription) {
-                        var allRules = cssDescription.cssRules;
-                        allRules.forEach(function(styleRule) {
-                            this._applyStyleRule(selectorName, styleRule, appliedProperties);
-                        }, this);
-                    }
-                    this._executeCurrentStyle(state);
-                }
+            console.log("add:"+selectorName);
+            var cssDescription = this.retrieveCSSRule(selectorName);
+            if (cssDescription) {
+                var state = this._stateForSelectorName(selectorName);
+                //var allRules = cssDescription.cssRules;
+                //allRules.forEach(function(styleRule) {
+                    this._applyStyleRule(selectorName, cssDescription, appliedProperties);
+                //}, this);
+                this._executeCurrentStyle(state);
             }
         }
     },
 
     _removeSelectorNamed: {
         value: function(selectorName, appliedProperties) {
-            var rule = this.retrieveCSSRule(selectorName);
-            if (rule) {
-                if (rule.cssText) {
-                    var cssDescription = CSSOM.parse(rule.cssText);
-                    if (cssDescription) {
-                        var allRules = cssDescription.cssRules;
-                        allRules.forEach(function(styleRule) {
-                            this._removeStyleRule(selectorName, styleRule, appliedProperties);
-                        }, this);
-                    }
-                    var state = this._stateForSelectorName(selectorName);
-                    this._executeCurrentStyle(state);
-                }
+            var cssDescription = this.retrieveCSSRule(selectorName);
+            if (cssDescription) {
+                this._removeStyleRule(selectorName, cssDescription, appliedProperties);
+                var state = this._stateForSelectorName(selectorName);
+                this._executeCurrentStyle(state);
             }
         }
     },
@@ -732,17 +738,9 @@ exports.Component3D = Target.specialize( {
             for (var i = 0 ; i < values.length ; i++) {
                 var selectorName = values[i][1];
                 if (this._stateForSelectorName(selectorName) === state) {
-                    var rule = this.retrieveCSSRule(selectorName);
-                    if (rule) {
-                        if (rule.cssText) {
-                            var cssDescription = CSSOM.parse(rule.cssText);
-                            if (cssDescription) {
-                                var allRules = cssDescription.cssRules;
-                                allRules.forEach(function(styleRule) {
-                                    this._removeStyleRule(selectorName, styleRule);
-                                }, this);
-                            }
-                        }
+                    var cssDescription = this.retrieveCSSRule(selectorName);
+                    if (cssDescription) {
+                        this._removeStyleRule(selectorName, cssDescription);
                     }
                 }
             }
@@ -854,33 +852,32 @@ exports.Component3D = Target.specialize( {
         }
     },
 
+    cssDescriptions: {
+        value: null, writable: true
+    },
+
+    handleStyleSheetsDidLoad: {
+        value: function() {
+            this.scene.removeEventListener("styleSheetsDidLoad", this);
+            this.classListDidChange();
+        }
+    },
+
     //http://www.hunlock.com/blogs/Totally_Pwn_CSS_with_Javascript
     retrieveCSSRule: {
         value: function(ruleName) {
-            ruleName = ruleName.toLowerCase();                       // Convert test string to lower case.
-            if (document.styleSheets) {                            // If browser can play with stylesheets
-                for (var i = 0; i < document.styleSheets.length; i++) { // For each stylesheet
-                    var styleSheet = document.styleSheets[i];          // Get the current Stylesheet
-                    var ii= 0 ;                                        // Initialize subCounter.
-                    var cssRule=false;                               // Initialize cssRule.
-                    do {                                             // For each rule in stylesheet
-                        if (styleSheet.cssRules) {                    // Browser uses cssRules?
-                            cssRule = styleSheet.cssRules[ii];         // Yes --Mozilla Style
-                        } else if (styleSheet.rules) {                                      // Browser usses rules?
-                            cssRule = styleSheet.rules[ii];            // Yes IE style.
-                        }                                             // End IE check.
-                        if (cssRule)  {   
-                            if (cssRule.selectorText) {
-                                if (cssRule.selectorText.toLowerCase() == ruleName) { //  match ruleName?
-                                    return cssRule;                      // return the style object.
-                                }                                          // End found rule name
-                            }                            // If we found a rule...
-                        }                                             // end found cssRule
-                        ii++;                                         // Increment sub-counter
-                    } while (cssRule)                                // end While loop
-                }                                                   // end For loop
-            }                                                      // end styleSheet ability check
-            return false;                                          // we found NOTHING!
+            for (var url in this.scene.styleSheets) {
+                var styleSheet = this.scene.styleSheets[url];
+                var allRules = styleSheet.cssRules;
+                for (var i = 0 ; i < allRules.length ; i++) {
+                    var styleRule = allRules[i];
+                    if (styleRule.selectorText != null) {
+                        if (styleRule.selectorText === ruleName) {
+                            return styleRule;
+                        }
+                    }
+                }
+            }
         }
     },
 
