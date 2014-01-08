@@ -260,28 +260,17 @@ exports.Component3D = Target.specialize( {
         value: function(declaration) {
             var components = declaration.split(" ");
             var transformOrigin;
-            if (components.length == 3) {
-                transformOrigin = vec3.create();
+
+            if (components.length >= 2) {
+                transformOrigin = vec2.create();
 
                 transformOrigin[0] = parseFloat(components[0]);
                 transformOrigin[1] = parseFloat(components[1]);
-                transformOrigin[2] = parseFloat(components[2]);
 
                 return transformOrigin;
             }
 
-            if (components.length == 2) {
-                transformOrigin = vec3.create();
-
-                transformOrigin[0] = parseFloat(components[0]);
-                transformOrigin[1] = parseFloat(components[1]);
-                transformOrigin[2] = 0;
-
-                return transformOrigin;
-            }
-
-
-            return vec3.createFrom(50,50,0);
+            return vec2.createFrom(50,50);
         }
     },
 
@@ -560,19 +549,29 @@ exports.Component3D = Target.specialize( {
                         declaration.value = cssValue;
                     }
                     break;
-                case "originVector":
+                case "transformOrigin":
                     if (typeof cssValue === "string") {
                         declaration.value = this._createVectorFromCSSTransformOriginDeclaration(cssValue);
                     } else {
                         declaration.value = cssValue;
                     }
                     break;
-
+                case "transformZOrigin": 
+                    if (typeof cssValue === "string") {
+                        declaration.value = parseFloat(cssValue);
+                    } else {
+                        declaration.value = cssValue;
+                    }
+                    break;
                 case "visibility":
                     declaration.value = cssValue;
                     break;
                 case "opacity":
-                    declaration.value = cssValue;
+                    if (typeof cssValue === "string") {
+                        declaration.value = parseFloat(cssValue);
+                    } else {
+                        declaration.value = cssValue;
+                    }
                     break;
                 default:
                     return false;
@@ -590,6 +589,10 @@ exports.Component3D = Target.specialize( {
             if (cssProperty === "-webkit-transform-origin") {
                 cssProperty = "transform-origin";
             }
+            if (cssProperty === "-montage-transform-z-origin") {
+                cssProperty = "transformZOrigin";
+            }
+
 
             //FIXME: we keep this intermediate step as a placeholder to switch between
             //offset or transform some pending CSS verification in test-apps to validate what to do there.
@@ -597,7 +600,7 @@ exports.Component3D = Target.specialize( {
                 cssProperty = "offsetTransform";
             }
             if (cssProperty === "transform-origin") {
-                cssProperty = "originVector";
+                cssProperty = "transformOrigin";
             }
 
             return cssProperty;
@@ -639,10 +642,22 @@ exports.Component3D = Target.specialize( {
                             var shortHandTransition = "";
                             if (transition["transition-property"] != null) {
                                 shortHandTransition += transition["transition-property"];
-                                shortHandTransition += " ";
+
                                 if (transition["transition-duration"] != null) {
+                                    shortHandTransition += " ";
                                     shortHandTransition += transition["transition-duration"];
                                 }
+
+                                if (transition["transition-timing-function"] != null) {
+                                    shortHandTransition += " ";
+                                    shortHandTransition += transition["transition-timing-function"];
+                                }
+
+                                if (transition["transition-timing-delay"] != null) {
+                                    shortHandTransition += " ";
+                                    shortHandTransition += transition["transition-timing-delay"];
+                                }
+
                                 var state = this._stateForSelectorName(selectorName);
                                 if (state != null) {
                                     if (this._applyCSSPropertyWithValueForState(state, cssProperty, shortHandTransition)) {
@@ -662,7 +677,6 @@ exports.Component3D = Target.specialize( {
 
     _removeStyleRule: {
         value: function(selectorName, styleRule) {
-            console.log("remove:"+selectorName);
             if (styleRule.style) {
 
                 var length = styleRule.style.length;
@@ -708,14 +722,10 @@ exports.Component3D = Target.specialize( {
 
     _applySelectorNamed: {
         value: function(selectorName, appliedProperties) {
-            console.log("add:"+selectorName);
             var cssDescription = this.retrieveCSSRule(selectorName);
             if (cssDescription) {
                 var state = this._stateForSelectorName(selectorName);
-                //var allRules = cssDescription.cssRules;
-                //allRules.forEach(function(styleRule) {
-                    this._applyStyleRule(selectorName, cssDescription, appliedProperties);
-                //}, this);
+                this._applyStyleRule(selectorName, cssDescription, appliedProperties);
                 this._executeCurrentStyle(state);
             }
         }

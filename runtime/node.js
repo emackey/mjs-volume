@@ -42,6 +42,8 @@ exports.Node = Component3D.specialize( {
             this.addOwnPropertyChangeListener("offsetTransform", this);
             this.addOwnPropertyChangeListener("originVector", this);
             this.addOwnPropertyChangeListener("glTFElement", this);
+            this.addOwnPropertyChangeListener("transformOrigin", this);
+            this.addOwnPropertyChangeListener("transformZOrigin", this);
         }
     },
 
@@ -93,9 +95,26 @@ exports.Node = Component3D.specialize( {
     },
 
     offsetTransform_animationSetter: {
-        set: function(value) {
-            this._offsetTransform = value;
-            this.handleOffsetTransformChange();
+		set: function(value) {
+	     	this._offsetTransform = value;
+	      	this.handleOffsetTransformChange();
+	 	}
+	},
+
+    handleTransformOriginChange: {
+        value: function() {
+            this.originVector = vec3.createFrom(this.transformOrigin[0], this.transformOrigin[1], this.transformZOrigin);
+        }
+    },
+
+    handleTransformZOriginChange: {
+        value: function() {
+            var currentTransformOrigin = this.transformOrigin;
+            if (currentTransformOrigin == 0) {
+                currentTransformOrigin = this.initialValueForStyleableProperty("transformOrigin");
+            }
+
+            this.originVector = vec3.createFrom(currentTransformOrigin[0], currentTransformOrigin[1], this.transformZOrigin);
         }
     },
 
@@ -209,6 +228,28 @@ exports.Node = Component3D.specialize( {
         }
     },
 
+    _transformOrigin: { value: null, writable:true },
+
+    transformOrigin: {
+        set: function(value) {
+            this._transformOrigin = value;
+        },
+        get: function() {
+            return this._transformOrigin;
+        }
+    },
+
+    _transformZOrigin: { value: 50, writable:true },
+
+    transformZOrigin: {
+        set: function(value) {
+            this._transformZOrigin = value;
+        },
+        get: function() {
+            return this._transformZOrigin;
+        }
+    },
+
     _observers: { value: null, writable: true},
 
     addObserver: {
@@ -236,7 +277,7 @@ exports.Node = Component3D.specialize( {
         }
     },
 
-    _stylableProperties: { value: ["visibility", "offsetTransform", "originVector"]},
+    _stylableProperties: { value: ["visibility", "offsetTransform", "transformOrigin", "transformZOrigin"]},
 
     styleableProperties: {
         get: function() {
@@ -252,6 +293,12 @@ exports.Node = Component3D.specialize( {
                 return Object.create(Transform).init();
             } else if (property === "originVector") {
                 return vec3.createFrom(50, 50, 0);
+            } else if (property === "offsetMatrix") {
+                return mat4.identity();
+            } else if (property === "transformOrigin") {
+                return vec2.createFrom(50, 50);
+            } else if (property === "transformZOrigin") {
+                return 50;                
             }
         }
     }
