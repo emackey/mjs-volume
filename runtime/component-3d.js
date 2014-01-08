@@ -180,12 +180,6 @@ exports.Component3D = Target.specialize( {
         }
     },
 
-    removeAllCSSRules: {
-        value: function() {
-
-        }
-    },
-
     __STYLE_DEFAULT__ : { value: "__default__"},
 
     _state: { value: this.__STYLE_DEFAULT__, writable: true },
@@ -573,6 +567,9 @@ exports.Component3D = Target.specialize( {
                         declaration.value = cssValue;
                     }
                     break;
+                case "cursor":
+                    declaration.value = cssValue;                    
+                    break;
                 default:
                     return false;
             }
@@ -750,10 +747,14 @@ exports.Component3D = Target.specialize( {
     },
 
     _removeClassNamed: {
-        value: function(className, appliedProperties) {
-            this._removeSelectorNamed("." + className, appliedProperties);
-            this._removeSelectorNamed("." + className + ":hover", appliedProperties);
-            this._removeSelectorNamed("." + className + ":active", appliedProperties);
+        value: function(className, state) {
+            if (state === "hover")
+                this._removeSelectorNamed("." + className + ":hover", null);
+            else if (state === "active")
+                this._removeSelectorNamed("." + className + ":active", null);
+            else {
+                this._removeSelectorNamed("." + className, null);
+            }
         }
     },
 
@@ -761,13 +762,8 @@ exports.Component3D = Target.specialize( {
         value: function(state) {
             var values = this.classList.enumerate();
             for (var i = 0 ; i < values.length ; i++) {
-                var selectorName = values[i][1];
-                if (this._stateForSelectorName(selectorName) === state) {
-                    var cssDescription = this.retrieveCSSRule(selectorName);
-                    if (cssDescription) {
-                        this._removeStyleRule(selectorName, cssDescription);
-                    }
-                }
+                var className = values[i][1];
+                this._removeClassNamed(className, state);
             }
         }
     },
@@ -788,10 +784,7 @@ exports.Component3D = Target.specialize( {
                         this[property] = this.initialValueForStyleableProperty(property);
                     }
                 }, this);
-
-            } else {
-                this.removeAllCSSRules();
-            }
+            } 
         }
     },
 

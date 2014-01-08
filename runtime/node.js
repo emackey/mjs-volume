@@ -44,6 +44,7 @@ exports.Node = Component3D.specialize( {
             this.addOwnPropertyChangeListener("glTFElement", this);
             this.addOwnPropertyChangeListener("transformOrigin", this);
             this.addOwnPropertyChangeListener("transformZOrigin", this);
+            this.addOwnPropertyChangeListener("cursor", this);
         }
     },
 
@@ -68,6 +69,8 @@ exports.Node = Component3D.specialize( {
             this.handleVisibilityChange();
             this.handleOffsetTransformChange();
             this.handleOriginVectorChange();
+            this.handleTransformOriginChange();
+            this.handleTransformZOriginChange();
 
             this._applyCSSPropertyWithValueForState(this.__STYLE_DEFAULT__, "offsetTransform", this._offsetTransform);
 
@@ -101,16 +104,28 @@ exports.Node = Component3D.specialize( {
 	 	}
 	},
 
+    handleCursorChange: {
+        value: function() {
+            this.scene.dispatchEventNamed("cursorUpdate", true, false, this.cursor);
+        }
+    },
+
     handleTransformOriginChange: {
         value: function() {
-            this.originVector = vec3.createFrom(this.transformOrigin[0], this.transformOrigin[1], this.transformZOrigin);
+
+            var currentTransformOrigin = this.transformOrigin;
+            if (currentTransformOrigin == null) {
+                currentTransformOrigin = this.initialValueForStyleableProperty("transformOrigin");
+            }
+
+            this.originVector = vec3.createFrom(currentTransformOrigin[0], currentTransformOrigin[1], this.transformZOrigin);
         }
     },
 
     handleTransformZOriginChange: {
         value: function() {
             var currentTransformOrigin = this.transformOrigin;
-            if (currentTransformOrigin == 0) {
+            if (currentTransformOrigin == null) {
                 currentTransformOrigin = this.initialValueForStyleableProperty("transformOrigin");
             }
 
@@ -277,7 +292,7 @@ exports.Node = Component3D.specialize( {
         }
     },
 
-    _stylableProperties: { value: ["visibility", "offsetTransform", "transformOrigin", "transformZOrigin"]},
+    _stylableProperties: { value: ["visibility", "offsetTransform", "transformOrigin", "transformZOrigin", "cursor"]},
 
     styleableProperties: {
         get: function() {
@@ -299,6 +314,8 @@ exports.Node = Component3D.specialize( {
                 return vec2.createFrom(50, 50);
             } else if (property === "transformZOrigin") {
                 return 50;                
+            } else if (property === "cursor") {
+                return "auto";
             }
         }
     }

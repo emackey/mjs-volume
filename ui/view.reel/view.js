@@ -152,6 +152,7 @@ exports.View = Component.specialize( {
             }
 
             if (this._scene) {
+                this._scene.removeEventListener("cursorUpdate", this);
                 this._scene.removeEventListener("materialUpdate", this);
                 this._scene.removeEventListener("textureUpdate", this);
             }
@@ -163,6 +164,7 @@ exports.View = Component.specialize( {
             //FIXME: incoming scene should not be expected to be just non null
             if (this._scene) {
                 this._sceneResourcesLoaded = false;
+                this._scene.addEventListener("cursorUpdate", this);
                 this._scene.addEventListener("textureUpdate", this);
                 this._scene.addEventListener("materialUpdate", this);
                 this.applyScene();
@@ -209,6 +211,14 @@ exports.View = Component.specialize( {
     handleMaterialUpdate: {
         value: function(evt) {
             this.needsDraw = true;
+        }
+    },
+
+    handleCursorUpdate: {
+        value: function(evt) {
+            if (this.element != null) {
+                this.element.style.cursor = evt.detail;            
+            }
         }
     },
 
@@ -346,10 +356,10 @@ exports.View = Component.specialize( {
                             //FIXME: This is an internal detail exposed for now
                             viewPointAnimationStep.animationWasAddedToTarget();
 
-                            var self = this;
-                            setTimeout(function() {
-                                self.element.style.cursor="default";            
-                            }, 100);
+//                            var self = this;
+  //                          setTimeout(function() {
+    //                            self.element.style.cursor="default";            
+      //                      }, 100);
                         }
                     }
                 }
@@ -773,7 +783,7 @@ exports.View = Component.specialize( {
                 (component !== this._previousHandledComponent)) {
                 if (this._previousHandledComponent != null) {
                     this._previousHandledComponent.handleEventNamed(Component3D._EXIT);
-                    this.element.style.cursor="default";            
+                    //this.element.style.cursor="default";            
                 }
             }
             if ((this._eventType === this._TOUCH_MOVE) &&
