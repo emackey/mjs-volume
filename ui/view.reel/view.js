@@ -298,6 +298,8 @@ exports.View = Component.specialize( {
     animationDidStart: {
         value: function(animation) {
             this.needsDraw = true;
+            //FIXME:Work-around a cursor issue as after a camera change
+            this.element.style.cursor = "default";            
         }
     },
 
@@ -355,11 +357,6 @@ exports.View = Component.specialize( {
 
                             //FIXME: This is an internal detail exposed for now
                             viewPointAnimationStep.animationWasAddedToTarget();
-
-//                            var self = this;
-  //                          setTimeout(function() {
-    //                            self.element.style.cursor="default";            
-      //                      }, 100);
                         }
                     }
                 }
@@ -711,10 +708,6 @@ exports.View = Component.specialize( {
 
             this.needsDraw = true;
 
-            // TODO the camera does its own listening but doesn't know about our draw system
-            // I'm minimizing impact to the dependencies as we get this all working so the listeners
-            // here really don't do much other than trigger drawing. They listen on capture
-            // to handle the event before the camera stopsPropagation (for whatever reason it does that)
             this.canvas.addEventListener('touchstart', this.start.bind(this), true);
             this.canvas.addEventListener('touchend', this.end.bind(this), true);
             this.canvas.addEventListener('touchcancel', this.end.bind(this), true);
@@ -783,7 +776,6 @@ exports.View = Component.specialize( {
                 (component !== this._previousHandledComponent)) {
                 if (this._previousHandledComponent != null) {
                     this._previousHandledComponent.handleEventNamed(Component3D._EXIT);
-                    //this.element.style.cursor="default";            
                 }
             }
             if ((this._eventType === this._TOUCH_MOVE) &&
@@ -855,21 +847,6 @@ exports.View = Component.specialize( {
         }
     },
 
-    /* returns an array of test results */
-    /*
-    hitTest: {
-        value: function(position, options) {
-            if (this.sceneRenderer) {
-                debugger;
-                if ((this.sceneRenderer.technique.rootPass) && (this.canvas)) {
-                    var viewport = [0, 0, parseInt(this.canvas.getAttribute("width")), parseInt(this.canvas.getAttribute("height"))];
-                    return this.sceneRenderer.technique.rootPass.hitTest(position, viewport, options);
-                }
-            }
-            return null;
-        }
-    },
-*/
     getWebGLRenderer: {
         value: function() {
             return this.sceneRenderer ? this.sceneRenderer.webGLRenderer : null;
