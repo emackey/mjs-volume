@@ -590,7 +590,6 @@ exports.Component3D = Target.specialize( {
                 cssProperty = "transformZOrigin";
             }
 
-
             //FIXME: we keep this intermediate step as a placeholder to switch between
             //offset or transform some pending CSS verification in test-apps to validate what to do there.
             if (cssProperty === "transform") {
@@ -604,9 +603,69 @@ exports.Component3D = Target.specialize( {
         }
     },
 
+    _dumpStyle: {
+        value: function(state) {
+            console.log("**dump style:"+state);
+            var style = this._style[state];
+            for (var property in style) {
+                var cssValue = style[property];
+                if (cssValue.value == null)
+                    continue;                        
+                switch (property) {
+                    case "offsetTransform":
+                        console.log("property:"+property+ " value:"+mat4.str(cssValue.value.matrix));
+                        break;
+                    default:
+                        console.log("property:"+property+ " value:"+cssValue.value);
+                    break;
+                }
+            }
+        }
+    },
+
+    _dumpAllStyles: {
+        value: function() {
+            console.log("******** dump styles ********");
+
+            for (var state in this._style) {
+                this._dumpStyle(state);
+            }
+        }
+    },
+
     _applyStyleRule: {
-        value: function(selectorName, styleRule, appliedProperties) {
+        value: function(selectorName, styleRule) {
+            var state = this._stateForSelectorName(selectorName);
+            var declaration = null;
             if (styleRule.style) {
+
+                if (state === this.__STYLE_DEFAULT__) {
+                    this.styleableProperties.forEach(function(property) {
+                    declaration = this._getStylePropertyObject(state, property);
+                    if (declaration.value == null) {
+                            this._applyCSSPropertyWithValueForState(    state, 
+                                                                        property, 
+                                                                        this.initialValueForStyleableProperty(property));
+                    } /*else {
+                            this._applyCSSPropertyWithValueForState(    state, 
+                                                                        property, 
+                                                                        declaration.value);
+                        }*/
+
+                    }, this);
+                } else {
+                    /*
+                    this.styleableProperties.forEach(function(property) {
+                        declaration = this._getStylePropertyObject(state, property);
+                        if (declaration.value == null) {
+                            declaration = this._getStylePropertyObject(this.__STYLE_DEFAULT__, property);
+                            this._applyCSSPropertyWithValueForState(    state, 
+                                                                        property, 
+                                                                        declaration.value);
+                        }
+                    }, this);*/
+                }
+
                 var length = styleRule.style.length;
                 if (length > 0) {
                     var transition = null;
@@ -622,15 +681,7 @@ exports.Component3D = Target.specialize( {
                             }
                             transition[cssProperty] = cssValue;
                         } else {
-                            //should be states ?
-                            var state = this._stateForSelectorName(selectorName);
-                            if (state != null) {
-                                if (this._applyCSSPropertyWithValueForState(state, cssProperty, cssValue)) {
-                                    if (appliedProperties != null) {
-                                        appliedProperties.add(cssProperty);
-                                    }
-                                }
-                            }
+                             this._applyCSSPropertyWithValueForState(state, cssProperty, cssValue);
                         }
 
                         if (transition != null) {
@@ -655,17 +706,9 @@ exports.Component3D = Target.specialize( {
                                     shortHandTransition += transition["transition-timing-delay"];
                                 }
 
-                                var state = this._stateForSelectorName(selectorName);
-                                if (state != null) {
-                                    if (this._applyCSSPropertyWithValueForState(state, cssProperty, shortHandTransition)) {
-                                        if (appliedProperties != null) {
-                                            appliedProperties.add(cssProperty);
-                                        }
-                                    }
-                                }
+                                this._applyCSSPropertyWithValueForState(state, cssProperty, shortHandTransition);                                
                             }
                         }
-
                     }
                 }
             }
@@ -682,7 +725,6 @@ exports.Component3D = Target.specialize( {
                         var cssValue = styleRule.style[cssProperty];
 
                         cssProperty = this.propertyNameFromCSS(cssProperty);
-
                         //should be states ?
                         var state = this._stateForSelectorName(selectorName);
                         if (state != null) {
@@ -695,20 +737,39 @@ exports.Component3D = Target.specialize( {
         }
     },
 
-    _executeCurrentStyle: {
+    appliedProperties: {
+        value: null, writable: true
+    },
+
+    _executeStylesForState: {
         value: function(state) {
-            if (state != this.__STYLE_DEFAULT__) {
-                if (state != this._state) {
-                    return;
-                }
-            }
+            if (this.appliedProperties == null)
+                this.appliedProperties = {};
 
             if (this.styleableProperties != null) {
                 this.styleableProperties.forEach(function(property) {
                     var declaration = this._getStylePropertyObject(state, property);
+                    var propertyWasSet = false;
                     if (declaration) {
+
                         if (declaration.value != null) {
-                            this[property] = declaration.value;
+                            propertyWasSet = true;
+                            if (this.appliedProperties[property] !== declaration.value) {
+                                this[property] = declaration.value;
+                                this.appliedProperties[property] = declaration.value;
+                            }
+                        }
+                        
+                        if (propertyWasSet == false) {
+                            declaration = this._getStylePropertyObject(this.__STYLE_DEFAULT__, property);
+
+                            if (declaration.value != null) {
+                                propertyWasSet = true;
+                                if (this.appliedProperties[property] !== declaration.value) {
+                                    this[property] = declaration.value;
+                                    this.appliedProperties[property] = declaration.value;
+                                }
+                            }
                         }
                     }
                 }, this);
@@ -717,44 +778,36 @@ exports.Component3D = Target.specialize( {
     },
 
     _applySelectorNamed: {
-        value: function(selectorName, appliedProperties) {
+        value: function(selectorName) {
             var cssDescription = this.retrieveCSSRule(selectorName);
             if (cssDescription) {
-                var state = this._stateForSelectorName(selectorName);
-                this._applyStyleRule(selectorName, cssDescription, appliedProperties);
-                this._executeCurrentStyle(state);
+                this._applyStyleRule(selectorName, cssDescription);
             }
         }
     },
 
     _applyClassNamed: {
-        value: function(className, appliedProperties) {
-            this._applySelectorNamed("." + className, appliedProperties);
-            this._applySelectorNamed("." + className + ":hover", appliedProperties);
-            this._applySelectorNamed("." + className + ":active", appliedProperties);
+        value: function(className) {
+            this._applySelectorNamed("." + className);
+            this._applySelectorNamed("." + className + ":hover");
+            this._applySelectorNamed("." + className + ":active");
         }
     },
 
     _removeSelectorNamed: {
-        value: function(selectorName, appliedProperties) {
+        value: function(selectorName) {
             var cssDescription = this.retrieveCSSRule(selectorName);
             if (cssDescription) {
-                this._removeStyleRule(selectorName, cssDescription, appliedProperties);
-                var state = this._stateForSelectorName(selectorName);
-                this._executeCurrentStyle(state);
+                this._removeStyleRule(selectorName, cssDescription);
             }
         }
     },
 
     _removeClassNamed: {
         value: function(className, state) {
-            if (state === "hover")
-                this._removeSelectorNamed("." + className + ":hover", null);
-            else if (state === "active")
-                this._removeSelectorNamed("." + className + ":active", null);
-            else {
-                this._removeSelectorNamed("." + className, null);
-            }
+            this._removeSelectorNamed("." + className + ":hover");
+            this._removeSelectorNamed("." + className + ":active");
+            this._removeSelectorNamed("." + className);
         }
     },
 
@@ -772,18 +825,13 @@ exports.Component3D = Target.specialize( {
         value: function() {
             var self = this;
             if (this.classList) {
-                var appliedProperties = new Set();
                 var values = this.classList.enumerate();
                 for (var i = 0 ; i < values.length ; i++) {
-                    var selectorName = values[i][1];
-                    this._applyClassNamed(selectorName, appliedProperties);
+                    var className = values[i][1];
+                    this._applyClassNamed(className);
                 }
 
-                this.styleableProperties.forEach(function(property) {
-                    if (appliedProperties.has(property) === false) {
-                        this[property] = this.initialValueForStyleableProperty(property);
-                    }
-                }, this);
+                this._executeStylesForState(this._state); 
             } 
         }
     },
@@ -857,16 +905,20 @@ exports.Component3D = Target.specialize( {
         value: function (plus, minus) {
             //on plus we stack classes
             if (plus != null) {
-                plus.forEach(function(selectorName) {
-                    this._applyClassNamed(selectorName);
+                plus.forEach(function(className) {
+                    this._applyClassNamed(className);
                 }, this);
             }
             //when something is removed is resync all
             if (minus != null) {
-                minus.forEach(function(selectorName) {
-                    this._removeClassNamed(selectorName);
+                minus.forEach(function(className) {
+                    this._removeClassNamed(className);
                 }, this);
             }
+
+            this._executeStylesForState(this._state); 
+            //this._dumpAllStyles();
+
         }
     },
 
@@ -916,12 +968,11 @@ exports.Component3D = Target.specialize( {
                 case this._EXIT:
                     state = this.__STYLE_DEFAULT__; //this is probably wrong - what happens if active is on going too ?
                     break;
-                case this._TOUCH_DOWN: {
+                case this._TOUCH_DOWN: 
                     state = "active";
                     var actionEvent = document.createEvent("CustomEvent");
                     actionEvent.initCustomEvent("action", true, true, null);
                     this.dispatchEvent(actionEvent);
-                }
                     break;
                 case this._TOUCH_UP:
                     state = this.__STYLE_DEFAULT__; //this is probably wrong - what happens if hover is on going too ?
@@ -929,16 +980,8 @@ exports.Component3D = Target.specialize( {
             }
 
             if (state !== this._state) {
-                if (this._state != this.__STYLE_DEFAULT__)
-                    this._removeSelectorsForState(this._state);
                 this._state = state;
-                var values = this.classList.enumerate();
-                for (var i = 0 ; i < values.length ; i++) {
-                    var selectorName = values[i][1];
-                    this._applyClassNamed(selectorName);
-                }
-
-                this._executeCurrentStyle(state);
+                this._executeStylesForState(state); 
             }
         }
     },
