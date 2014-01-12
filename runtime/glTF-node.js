@@ -462,8 +462,9 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
                         var res = mat4.identity();
                         var res2 = mat4.create();
 
-                        var originVector = vec3.createFrom(0.5, 0.5, 0);
+                        var originVector = vec3.createFrom(0.5, 0.5, 0.5);
                         if (this._originVector != null) {
+
                             originVector[0] = this._originVector[0] / 100.0;
                             originVector[1] = this._originVector[1] / 100.0;
                             originVector[2] = this._originVector[2] / 100.0;
