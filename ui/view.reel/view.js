@@ -992,11 +992,11 @@ exports.View = Component.specialize( {
 
     draw: {
         value: function() {
-            this.sceneRenderer.technique.rootPass.viewPoint = this._internalViewPoint;
             //Update canvas when size changed
             var webGLContext = this.getWebGLContext();
             if (webGLContext == null || this._disableRendering)
                 return;
+            this.sceneRenderer.technique.rootPass.viewPoint = this._internalViewPoint;
 
             //WebGL does it for us with preserveDrawBuffer = false
             if (this._shouldForceClear || (this._contextAttributes.preserveDrawingBuffer == null) || (this._contextAttributes.preserveDrawingBuffer == true)) {
