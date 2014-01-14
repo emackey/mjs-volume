@@ -758,11 +758,12 @@ exports.View = Component.specialize( {
     handleSelectedNode: {
         value: function(glTFElementID) {
             var glTFElement = null,
-                previousGlTFElement = this._previousHandledComponent;
+                previousGlTFElement = this._previousHandledComponent,
+                previousHandledComponent3D = previousGlTFElement ? previousGlTFElement.component3D : null;
 
             if (this._eventType === this._TOUCH_UP) {
-                if (!previousGlTFElement) {
-                    this.actionDispatcher.dispatchActionOnGlTFElement(Component3D._TOUCH_UP, previousGlTFElement);
+                if (previousGlTFElement && previousHandledComponent3D) {
+                    previousHandledComponent3D.handleActionOnGlTFElement(previousGlTFElement, Component3D._TOUCH_UP);
                 }
 
                 this._eventType = -1;
@@ -774,8 +775,10 @@ exports.View = Component.specialize( {
             }
 
             //are we out of a move ?
-            if (previousGlTFElement && this._previousEventType === this._TOUCH_MOVE && glTFElement !== previousGlTFElement) {
-                this.actionDispatcher.dispatchActionOnGlTFElement(Component3D._EXIT, previousGlTFElement);
+            if (previousGlTFElement && previousHandledComponent3D && this._previousEventType === this._TOUCH_MOVE &&
+                glTFElement !== previousGlTFElement) {
+
+                previousHandledComponent3D.handleActionOnGlTFElement(previousGlTFElement, Component3D._EXIT);
             }
 
             if (this._eventType === this._TOUCH_MOVE && glTFElement !== previousGlTFElement) {

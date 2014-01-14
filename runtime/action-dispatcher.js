@@ -75,6 +75,23 @@ exports.ActionDispatcher = Montage.specialize({
     },
 
     /**
+     * Tries to find whether a Component3D has a css selector for an eventType.
+     * @private
+     * @param {String} action - a "Component Action".
+     * @param {Object} component - a component which could be a target.
+     * @return {Boolean}
+     */
+    _isComponentStyleRespondToAction: {
+        value: function (action, component) {
+            var eventType = COMPONENT_ACTION_TO_EVENT_TYPE[action],
+                style = component._style;
+
+            return eventType && eventType !== COMPONENT_ACTION_TO_EVENT_TYPE._TOUCH_DOWN &&
+                style && typeof style === "object" && style.hasOwnProperty(eventType);
+        }
+    },
+
+    /**
      * Dispatches an action through the "3D Components tree",
      * until it founds a Component 3D that is listening to this action.
      * @function
@@ -91,7 +108,9 @@ exports.ActionDispatcher = Montage.specialize({
                 pathToParents.some(function (element) {
                     var component = element.component3D;
 
-                    if (component && self._isRegisteredListenersForEventTypeOnComponent(action, component)) {
+                    if (component && (self._isRegisteredListenersForEventTypeOnComponent(action, component) ||
+                        self._isComponentStyleRespondToAction(action, component))) {
+
                         component.handleActionOnGlTFElement(glTFElement, action);
 
                         return true;
