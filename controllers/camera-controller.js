@@ -146,7 +146,9 @@ exports.CameraController = Montage.specialize( {
 
             vec3.normalize(direction);
 
-            var wheelStep = this.zoomStep * event.wheelDeltaY;
+            var delta = event.wheelDeltaY != null ? event.wheelDeltaY : event.detail ? -event.detail/3 : 0;
+
+            var wheelStep =  this.zoomStep * delta;
 
             eye[0] += wheelStep * direction[0];
             eye[1] += wheelStep * direction[1];
