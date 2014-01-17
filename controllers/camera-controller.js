@@ -37,6 +37,12 @@ exports.CameraController = Montage.specialize( {
         }
     },
 
+    _deltaForEvent: {
+        value: function(event) {
+            return event.wheelDeltaY != null ? event.wheelDeltaY : -event.deltaY;
+        }
+    },
+
     _minimalDistance: { value: 0, writable: true},
 
     _computeInitialDistance: {
@@ -146,7 +152,7 @@ exports.CameraController = Montage.specialize( {
 
             vec3.normalize(direction);
 
-            var delta = event.wheelDeltaY != null ? event.wheelDeltaY : event.detail ? -event.detail/3 : 0;
+            var delta = this._deltaForEvent(event);
 
             var wheelStep =  this.zoomStep * delta;
 
@@ -163,7 +169,7 @@ exports.CameraController = Montage.specialize( {
             if (distance > this._minimalDistance) {
                 this.viewPoint.glTFElement.transform.translation = eye;
             } else {
-                var minimalDistance = (event.wheelDeltaY > 0) ? -this._minimalDistance : this._minimalDistance;
+                var minimalDistance = (delta > 0) ? -this._minimalDistance : this._minimalDistance;
 
                 eye[0] = targetPosition[0] + direction[0] * minimalDistance;
                 eye[1] = targetPosition[1] + direction[1] * minimalDistance;
