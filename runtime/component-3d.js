@@ -683,7 +683,7 @@ exports.Component3D = Target.specialize( {
                         } else {
                              this._applyCSSPropertyWithValueForState(state, cssProperty, cssValue);
                         }
-
+                    }
                         if (transition != null) {
                             cssProperty = "transition";
                             //build up shorthand version of transition
@@ -709,7 +709,7 @@ exports.Component3D = Target.specialize( {
                                 this._applyCSSPropertyWithValueForState(state, cssProperty, shortHandTransition);                                
                             }
                         }
-                    }
+
                 }
             }
         }
