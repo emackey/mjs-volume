@@ -909,11 +909,13 @@ exports.Component3D = Target.specialize( {
                     this._applyClassNamed(className);
                 }, this);
             }
-            //when something is removed is resync all
+            //when something is removed we resync all
             if (minus != null) {
                 minus.forEach(function(className) {
                     this._removeClassNamed(className);
                 }, this);
+                this.classListDidChange();
+                return;
             }
 
             this._executeStylesForState(this._state); 
