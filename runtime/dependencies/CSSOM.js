@@ -827,7 +827,7 @@ CSSOM.CSSValue.prototype = {
 
 	// @see: http://www.w3.org/TR/DOM-Level-2-Style/css.html#CSS-CSSValue
 	set cssText(text) {
-		var name = this._getConstructorName();
+		var name = this._getConstructorName(text);
 
 		throw new Exception('DOMException: property "cssText" of "' + name + '" is readonly!');
 	},
