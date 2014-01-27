@@ -1,0 +1,25 @@
+.TreeCell-toggle {
+    width: 0;
+    height: 0;
+    margin: 0;
+    outline: none;
+    -webkit-appearance: none;
+    border-left: 10px solid gray;
+    border-bottom: 5px solid transparent;
+    border-top: 5px solid transparent;
+    -webkit-transition: -webkit-transform .1s ease-in-out;
+}
+
+.TreeCell-toggle:hover {
+    cursor: pointer;
+    border-left: 10px solid #AEAEAE;
+
+}
+
+.TreeCell-toggle:checked {
+    -webkit-transform: rotate(90deg);
+}
+
+.TreeCell-toggle-invisible {
+    visibility: hidden;
+}
