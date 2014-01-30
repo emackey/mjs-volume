@@ -955,27 +955,33 @@ exports.Component3D = Target.specialize( {
 
     //--
 
-    handleEventNamed: {
-        value: function(name) {
-
+    handleActionOnGlTFElement: {
+        value: function (glTFElement, action) {
             var state = this.__STYLE_DEFAULT__;
 
-            switch (name) {
+            switch (action) {
                 case this._ENTER:
                     state = "hover";
                     var hoverEvent = document.createEvent("CustomEvent");
-                    hoverEvent.initCustomEvent("hover", true, true, null);
+                    hoverEvent.initCustomEvent("hover", true, true, {
+                        glTFElement: glTFElement
+                    });
                     this.dispatchEvent(hoverEvent);
                     break;
+
                 case this._EXIT:
                     state = this.__STYLE_DEFAULT__; //this is probably wrong - what happens if active is on going too ?
                     break;
-                case this._TOUCH_DOWN: 
+
+                case this._TOUCH_DOWN:
                     state = "active";
                     var actionEvent = document.createEvent("CustomEvent");
-                    actionEvent.initCustomEvent("action", true, true, null);
+                    actionEvent.initCustomEvent("action", true, true, {
+                        glTFElement: glTFElement
+                    });
                     this.dispatchEvent(actionEvent);
                     break;
+
                 case this._TOUCH_UP:
                     state = this.__STYLE_DEFAULT__; //this is probably wrong - what happens if hover is on going too ?
                     break;
@@ -983,7 +989,7 @@ exports.Component3D = Target.specialize( {
 
             if (state !== this._state) {
                 this._state = state;
-                this._executeStylesForState(state); 
+                this._executeStylesForState(state);
             }
         }
     },

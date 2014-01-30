@@ -61,6 +61,7 @@ var SceneHelper = require("runtime/scene-helper").SceneHelper;
 var CameraController = require("controllers/camera-controller").CameraController;
 var Transform = require("runtime/transform").Transform;
 var Component3D = require("runtime/component-3d").Component3D;
+var ActionDispatcher = require("runtime/action-dispatcher").ActionDispatcher;
 require("runtime/dependencies/webgl-debug");
 /**
     Description TODO
@@ -706,6 +707,8 @@ exports.View = Component.specialize( {
             }, function (progress) {
             });
 
+            this.actionDispatcher = ActionDispatcher.create().initWithScene(this.scene);
+
             this.needsDraw = true;
 
             this.canvas.addEventListener('touchstart', this.start.bind(this), true);
@@ -753,46 +756,43 @@ exports.View = Component.specialize( {
     _previousHandledComponent: { value: null, writable: true },
 
     handleSelectedNode: {
-        value: function(componentID) {
+        value: function(glTFElementID) {
+            var glTFElement = null,
+                previousGlTFElement = this._previousHandledComponent,
+                previousHandledComponent3D = previousGlTFElement ? previousGlTFElement.component3D : null;
 
             if (this._eventType === this._TOUCH_UP) {
-                if (this._previousHandledComponent != null)
-                    this._previousHandledComponent.handleEventNamed(Component3D._TOUCH_UP);
+                if (previousGlTFElement && previousHandledComponent3D) {
+                    previousHandledComponent3D.handleActionOnGlTFElement(previousGlTFElement, Component3D._TOUCH_UP);
+                }
+
                 this._eventType = -1;
             }
 
-            var component = null;
-            if (componentID != null) {
-                var glTFElement = this.scene.glTFElement.ids[componentID];
-                if (glTFElement != null) {
-                    if (glTFElement.component3D != null) {
-                        component = glTFElement.component3D;
-                    }
-                }
+
+            if (glTFElementID) {
+                glTFElement = this.scene.glTFElement.ids[glTFElementID];
             }
 
             //are we out of a move ?
-            if ((this._previousEventType === this._TOUCH_MOVE) &&
-                (component !== this._previousHandledComponent)) {
-                if (this._previousHandledComponent != null) {
-                    this._previousHandledComponent.handleEventNamed(Component3D._EXIT);
-                }
+            if (previousGlTFElement && previousHandledComponent3D && this._previousEventType === this._TOUCH_MOVE &&
+                glTFElement !== previousGlTFElement) {
+
+                previousHandledComponent3D.handleActionOnGlTFElement(previousGlTFElement, Component3D._EXIT);
             }
-            if ((this._eventType === this._TOUCH_MOVE) &&
-                (component !== this._previousHandledComponent)) {
-                if (component != null) {
-                    component.handleEventNamed(Component3D._ENTER);
+
+            if (this._eventType === this._TOUCH_MOVE && glTFElement !== previousGlTFElement) {
+                if (glTFElement) {
+                    this.actionDispatcher.dispatchActionOnGlTFElement(Component3D._ENTER, glTFElement);
                 } else {
                     this._eventType = -1;
                 }
-            } else if (this._eventType === this._TOUCH_DOWN) {
-                if (component != null) {
-                    component.handleEventNamed(Component3D._TOUCH_DOWN);
-                    this._eventType = -1;
-                }
+            } else if (glTFElement && this._eventType === this._TOUCH_DOWN) {
+                this.actionDispatcher.dispatchActionOnGlTFElement(Component3D._TOUCH_DOWN, glTFElement);
+                this._eventType = -1;
             }
 
-            this._previousHandledComponent = component;
+            this._previousHandledComponent = glTFElement;
             this._previousEventType = this._eventType;
         }
     },
