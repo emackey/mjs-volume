@@ -28,7 +28,8 @@
                 "element": {"#": "label"}
             },
             "bindings": {
-                "value": {"<-": "@owner.name"}
+                "value": {"<-": "@owner.name"},
+                "classList.has('TreeCell-label--selected')" : { "<-" : "@owner.selected"}
             }
         },
 
@@ -38,7 +39,7 @@
                 "element": {"#": "label-button"}
             },
             "bindings": {
-                "detail.get('sceneNode')": {"<-": "@owner.name"}
+                "detail.get('treeCellSelected')": {"<-": "@owner"}
             }
         },
 

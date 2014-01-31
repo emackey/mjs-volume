@@ -46,3 +46,13 @@
     background-color: transparent;
     border-color: transparent;
 }
+
+.TreeCell .TreeCell-label {
+    padding: 2px 6px;
+    font-size: 15px;
+}
+
+.TreeCell .TreeCell-label--selected {
+    background-color: #E7E7E7;
+    border-radius: 6px;
+}

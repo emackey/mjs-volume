@@ -7,7 +7,7 @@ var Component = require("montage/ui/component").Component,
     SceneTreeFactory = require("./core/scene-tree-factory").SceneTreeFactory,
 
     DEFAULT_VALUES = {
-        indentValue: 14,
+        indentValue: 10,
         indentUnit: "px"
     };
 
@@ -29,6 +29,10 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
     },
 
     _treeFactory: {
+        value: null
+    },
+
+    _previousNodeSelected: {
         value: null
     },
 
@@ -70,15 +74,28 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         }
     },
 
+    _selectTreeCellNode: {
+        value: function (treeCell) {
+            treeCell.selected = !treeCell.selected;
+
+            if (this._previousNodeSelected && this._previousNodeSelected.selected) {
+                this._previousNodeSelected.selected = false;
+            }
+
+            this._previousNodeSelected = treeCell;
+        }
+    },
+
     handleNodeElementAction: {
         value: function (event) {
             var detail = event.detail;
 
             if (detail) {
-                var sceneNodeSelected = detail.get("sceneNode");
+                var treeCellSelected = detail.get("treeCellSelected");
 
-                if (sceneNodeSelected) {
-                    this.dispatchEventNamed("sceneNodeSelected", true, true, sceneNodeSelected);
+                if (treeCellSelected) {
+                    this._selectTreeCellNode(treeCellSelected);
+                    this.dispatchEventNamed("sceneNodeSelected", true, true, treeCellSelected.node.content.name);
                 }
             }
         }

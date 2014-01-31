@@ -32,6 +32,10 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
         value: null
     },
 
+    selected: {
+        value: null
+    },
+
     _node: {
         value: null
     },
