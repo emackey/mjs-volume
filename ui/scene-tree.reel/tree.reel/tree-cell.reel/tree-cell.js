@@ -28,21 +28,26 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
         value: false
     },
 
+    name: {
+        value: null
+    },
+
     _node: {
         value: null
     },
 
     node: {
         set: function (iteration) {
-            if (iteration && typeof iteration === "object") {
+            if (iteration && typeof iteration === "object" && iteration.content) {
                 iteration.expanded = iteration.content.root ? true : iteration.expanded;
 
-                if (iteration.content && iteration.content.rawChildren) {
+                if (iteration.content.rawChildren) {
                     this.hasChildren = Object.keys(iteration.content.rawChildren).length > 0;
                 }
-            }
 
-            this._node = iteration;
+                this.name = iteration.content.name;
+                this._node = iteration;
+            }
         },
         get: function () {
             return this._node;

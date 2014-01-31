@@ -28,7 +28,17 @@
                 "element": {"#": "label"}
             },
             "bindings": {
-                "value": {"<-": "@owner.node.content.name"}
+                "value": {"<-": "@owner.name"}
+            }
+        },
+
+        "nodeElement": {
+            "prototype": "native/ui/button.reel",
+            "properties": {
+                "element": {"#": "label-button"}
+            },
+            "bindings": {
+                "detail.get('sceneNode')": {"<-": "@owner.name"}
             }
         },
 
@@ -47,8 +57,10 @@
 <body>
     <div data-montage-id="treeCell" class="TreeCell">
         <div data-montage-id="rootCondition">
-            <input data-montage-id="expanded" class="TreeCell-toggle" type="checkbox">
-            <span data-montage-id="label" class="TreeCell-label"></span>
+            <input data-montage-id="expanded" class="TreeCell-toggle" type="checkbox" />
+            <button data-montage-id="label-button" class="TreeCell-button">
+                <span data-montage-id="label" class="TreeCell-label"></span>
+            </button>
         </div>
     </div>
 </body>

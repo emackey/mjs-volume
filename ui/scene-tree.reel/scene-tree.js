@@ -70,6 +70,20 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         }
     },
 
+    handleNodeElementAction: {
+        value: function (event) {
+            var detail = event.detail;
+
+            if (detail) {
+                var sceneNodeSelected = detail.get("sceneNode");
+
+                if (sceneNodeSelected) {
+                    this.dispatchEventNamed("sceneNodeSelected", true, true, sceneNodeSelected);
+                }
+            }
+        }
+    },
+
     _sceneGraphTree: {
         value: null
     },
