@@ -38,6 +38,10 @@ exports.Tree = Component.specialize(/** @lends Tree# */ {
         }
     },
 
+    configuration: {
+        value: null
+    },
+
     treeController: {
         value: null
     },

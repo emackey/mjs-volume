@@ -20,12 +20,8 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
         value: false
     },
 
-    indentValue: {
-        value: 14
-    },
-
-    indentUnit: {
-        value: "px"
+    configuration: {
+        value: null
     },
 
     fulfilled: {
@@ -56,9 +52,9 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
     draw: {
         value: function () {
             if (this.node) {
-                var indentValue = this.indentValue * (this.node.depth - 1);
+                var indentValue = this.configuration.get("indentValue") * (this.node.depth - 1);
 
-                this.element.style.paddingLeft = indentValue + this.indentUnit;
+                this.element.style.paddingLeft = indentValue + this.configuration.get("indentUnit");
             }
         }
     }

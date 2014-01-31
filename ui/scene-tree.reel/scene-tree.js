@@ -3,7 +3,13 @@
  * @requires montage/ui/component
  */
 var Component = require("montage/ui/component").Component,
-    SceneTreeFactory = require("./core/scene-tree-factory").SceneTreeFactory;
+    Dict = require("collections/dict"),
+    SceneTreeFactory = require("./core/scene-tree-factory").SceneTreeFactory,
+
+    DEFAULT_VALUES = {
+        indentValue: 14,
+        indentUnit: "px"
+    };
 
 /**
  * @class SceneGraphTree
@@ -16,10 +22,17 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
             this.super();
 
             this._treeFactory = SceneTreeFactory.create();
+            this.configuration = Dict();
+
+            this._populateConfiguration();
         }
     },
 
     _treeFactory: {
+        value: null
+    },
+
+    configuration: {
         value: null
     },
 
@@ -36,6 +49,16 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
 
                 this.scene.addOwnPropertyChangeListener("status", this);
             }
+        }
+    },
+
+    _populateConfiguration: {
+        value: function () {
+            var self = this;
+
+            Object.keys(DEFAULT_VALUES).forEach(function (key) {
+                self.configuration.set(key, DEFAULT_VALUES[key]);
+            });
         }
     },
 
