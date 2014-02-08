@@ -3,7 +3,13 @@
  * @requires montage/ui/component
  */
 var Component = require("montage/ui/component").Component,
-    SceneTreeFactory = require("./core/scene-tree-factory").SceneTreeFactory;
+    Dict = require("collections/dict"),
+    SceneTreeFactory = require("./core/scene-tree-factory").SceneTreeFactory,
+
+    DEFAULT_VALUES = {
+        indentValue: 10,
+        indentUnit: "px"
+    };
 
 /**
  * @class SceneGraphTree
@@ -16,10 +22,21 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
             this.super();
 
             this._treeFactory = SceneTreeFactory.create();
+            this.configuration = Dict();
+
+            this._populateConfiguration();
         }
     },
 
     _treeFactory: {
+        value: null
+    },
+
+    _previousNodeSelected: {
+        value: null
+    },
+
+    configuration: {
         value: null
     },
 
@@ -39,10 +56,47 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         }
     },
 
+    _populateConfiguration: {
+        value: function () {
+            var self = this;
+
+            Object.keys(DEFAULT_VALUES).forEach(function (key) {
+                self.configuration.set(key, DEFAULT_VALUES[key]);
+            });
+        }
+    },
+
     handleStatusChange: {
         value: function(status) {
             if (status === "loaded" && this.scene) {
                this.sceneGraphTree = this.scene.rootNode.glTFElement;
+            }
+        }
+    },
+
+    _selectTreeCellNode: {
+        value: function (treeCell) {
+            treeCell.selected = !treeCell.selected;
+
+            if (this._previousNodeSelected && this._previousNodeSelected.selected) {
+                this._previousNodeSelected.selected = false;
+            }
+
+            this._previousNodeSelected = treeCell;
+        }
+    },
+
+    handleNodeElementAction: {
+        value: function (event) {
+            var detail = event.detail;
+
+            if (detail) {
+                var treeCellSelected = detail.get("treeCellSelected");
+
+                if (treeCellSelected) {
+                    this._selectTreeCellNode(treeCellSelected);
+                    this.dispatchEventNamed("sceneNodeSelected", true, true, treeCellSelected.node.content.name);
+                }
             }
         }
     },

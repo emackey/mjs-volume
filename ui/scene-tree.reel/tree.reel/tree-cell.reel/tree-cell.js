@@ -20,16 +20,20 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
         value: false
     },
 
-    indentValue: {
-        value: 14
-    },
-
-    indentUnit: {
-        value: "px"
+    configuration: {
+        value: null
     },
 
     fulfilled: {
         value: false
+    },
+
+    name: {
+        value: null
+    },
+
+    selected: {
+        value: null
     },
 
     _node: {
@@ -38,15 +42,16 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
 
     node: {
         set: function (iteration) {
-            if (iteration && typeof iteration === "object") {
+            if (iteration && typeof iteration === "object" && iteration.content) {
                 iteration.expanded = iteration.content.root ? true : iteration.expanded;
 
-                if (iteration.content && iteration.content.rawChildren) {
+                if (iteration.content.rawChildren) {
                     this.hasChildren = Object.keys(iteration.content.rawChildren).length > 0;
                 }
-            }
 
-            this._node = iteration;
+                this.name = iteration.content.name;
+                this._node = iteration;
+            }
         },
         get: function () {
             return this._node;
@@ -56,9 +61,9 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
     draw: {
         value: function () {
             if (this.node) {
-                var indentValue = this.indentValue * (this.node.depth - 1);
+                var indentValue = this.configuration.get("indentValue") * (this.node.depth - 1);
 
-                this.element.style.paddingLeft = indentValue + this.indentUnit;
+                this.element.style.paddingLeft = indentValue + this.configuration.get("indentUnit");
             }
         }
     }
