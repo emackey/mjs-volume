@@ -69,7 +69,7 @@ require("runtime/dependencies/webgl-debug");
     @extends module:montage/ui/component.Component
 */
 
-exports.View = Component.specialize( {
+exports.SceneView = Component.specialize( {
 
     /* constants */
 
@@ -136,6 +136,45 @@ exports.View = Component.specialize( {
                 this._cameraController = Montage.create(CameraController);
             }
             return this._cameraController;
+        }
+    },
+
+    sceneTimeWillChange: {
+        value: function(animation, upcomingSceneTime) {
+
+        }
+    },
+
+    sceneTimeDidChange: {
+        value: function(animation) {
+
+            if (this.scene == null)
+                return;
+            if (this.scene.glTFElement == null) {
+                return;
+            }
+
+            var endTime = this.scene.glTFElement.endTime;
+            if ((endTime !== -1) && (this.sceneView != null)) {
+                var animationManager = this.scene.glTFElement.animationManager;
+                if (animationManager.sceneTime / 1000. > endTime) {
+                    if (this.automaticallyCyclesThroughViewPoints == true) {
+                        var viewPointIndex = this.sceneView._viewPointIndex; //_viewPointIndex is private in view, we could actually put/access this info from scene
+                        var viewPoints = SceneHelper.getViewPoints(this.scene);
+                        if (viewPoints.length > 0) {
+                            var nextViewPoint;
+                            var checkIdx = 0;
+                            do {
+                                animationManager.sceneTime = 0;
+                                checkIdx++;
+                                viewPointIndex = ++viewPointIndex % viewPoints.length;
+                                nextViewPoint = viewPoints[viewPointIndex];
+                            } while ((checkIdx < viewPoints.length) && (animationManager.nodeHasAnimatedAncestor(nextViewPoint.glTFElement) == false));
+                            this.sceneView.viewPoint = nextViewPoint;
+                        }
+                    }
+                }
+            }
         }
     },
 
@@ -225,6 +264,19 @@ exports.View = Component.specialize( {
 
     /* public API */
 
+    /**
+     * If true the viewer will automatically switch from one animated viewPoint to another
+     * @type {boolean}
+     * @default true
+     */
+    automaticallyCyclesThroughViewPoints: { value: true, writable: true },
+
+
+    /**
+     * If false the scene will be shown only when all resources have been loaded.
+     * @type {boolean}
+     * @default true
+     */
     allowsProgressiveSceneLoading: { value:false, writable:true },
 
     scene: {
@@ -440,6 +492,14 @@ exports.View = Component.specialize( {
             if (status === "loaded") {
                 this.scene = object;
                 this.needsDraw = true;
+
+                if (this.scene.glTFElement) {
+                    if (this.scene.glTFElement.animationManager) {
+                        if (this.scene.glTFElement.animationManager) {
+                            this.scene.glTFElement.animationManager.delegate = this;
+                        }
+                    }
+                }
             }
         }
     },
@@ -535,6 +595,7 @@ exports.View = Component.specialize( {
 
     enterDocument: {
         value: function(firstTime) {
+            window.addEventListener("resize", this, true);
             var self = this;
 
             if (this.scene) {
@@ -720,6 +781,12 @@ exports.View = Component.specialize( {
             this.canvas.addEventListener('mouseup', this.end.bind(this), true);
             this.canvas.addEventListener('mousemove', this.move.bind(this), true);
             this.canvas.addEventListener('wheel', this, true);
+        }
+    },
+
+    exitDocument: {
+        value: function() {
+            window.removeEventListener("resize", this, true);
         }
     },
 
@@ -1145,15 +1212,23 @@ exports.View = Component.specialize( {
         }
     },
 
-    willDraw: {
-        value: function() {
+    captureResize: {
+        value: function(evt) {
+            this.needsDraw = true;
+
+            var w = this.element.offsetWidth;
+            var h = this.element.offsetHeight;
+
+            this.width = w;
+            this.height = h;
+            this.needsDraw = true;
+
         }
     },
 
     templateDidLoad: {
         value: function() {
             var self = this;
-            window.addEventListener("resize", this, true);
 
             var parent = this.parentComponent;
             var animationTimeout = null;
@@ -1162,10 +1237,10 @@ exports.View = Component.specialize( {
             composer.hasMomentum = true;
             composer.allowFloats = true;
             composer.pointerSpeedMultiplier = 0.15;
-
             this._internalViewPoint = SceneHelper.createGLTFNodeIncludingCamera("__internal_viewPoint__");
-
             this.translateComposer = composer;
+
+            this.needsDraw = true;
         }
     }
 });
