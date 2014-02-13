@@ -27,22 +27,23 @@ To produce glTF Assets, 3D File are are converterted using such [tool](https://g
 ### Converting 3D Files
 
 Our command line tool to convert a scene is collada2gltf.  
-It converts a COLLADA file to a glTF asset.
+Here is how to convert a COLLADA file and create glTF asset:
 
 ```
 collada2gltf -f duck.dae
 ```
 
-It will create `duck.json`, which companions files (binary data and shaders).  
+This command will create `duck.json` along with its companions files (binary data and shaders).  
 
 As they become available, other converters producing compliant glTF may be used.  
 They could take any other format than COLLADA as input.  
 
-Once this asset is ready, a `Scene` can be created and assigned to a view...
+Once your asset is ready, a `Scene` can be created and assigned to a SceneView...
 
 ### Displaying a 3D Scene
 
 The following steps must following to import a scene:
+
 1. Create a `Scene`.
 2. Assign it to a `SceneView`.
 
@@ -80,19 +81,19 @@ While we want to clearly extends the CSS Support, we also want to keep to what's
 So, this short list will grow with time *but* the whole set of CSS specs can't be expected to be implemented (and even make sense) here.
 
 Here what is currently commonly supported:
-* **Transitions**:
- * **timingFunction**: `ease`, `linear`, `ease-in`, `ease-out` `ease-in-out`
+* Transitions:
+ * timingFunction: `ease`, `linear`, `ease-in`, `ease-out` `ease-in-out`
 
-Properties supported by Node:
-* **tranform**: `rotateX`, `rotateY`, `rotateZ`, `rotate3d`, `scaleX`, `scaleY`, `scaleZ`, `translateX`, `translateY`, `translateZ`
-* **transform-origin**
-* **visibility**: `hidden`, `visible`
-* **-montage-transform-z-origin** (to extend transform origin 3d content with depth)
+Properties supported by **Node**:
+* tranform: `rotateX`, `rotateY`, `rotateZ`, `rotate3d`, `scaleX`, `scaleY`, `scaleZ`, `translateX`, `translateY`, `translateZ`
+* transform-origin
+* visibility: `hidden`, `visible`
+* -montage-transform-z-origin (to extend transform origin 3d content with depth)
 
-Properties supported by Material:
+Properties supported by **Material**:
 > will soon add ability to set images/color here.  
 
-* **opacity**  
+* opacity
 
 ## API
 
@@ -101,6 +102,8 @@ Properties supported by Material:
 ### SceneView
 
 #### scene
+
+The scene property 
 
 #### viewPoint:
 
