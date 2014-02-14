@@ -76,12 +76,11 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
 
     _selectTreeCellNode: {
         value: function (treeCell) {
-            treeCell.selected = !treeCell.selected;
-
             if (this._previousNodeSelected && this._previousNodeSelected.selected) {
                 this._previousNodeSelected.selected = false;
             }
 
+            treeCell.selected = true;
             this._previousNodeSelected = treeCell;
         }
     },
