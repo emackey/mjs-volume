@@ -92,9 +92,9 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
             if (detail) {
                 var treeCellSelected = detail.get("treeCellSelected");
 
-                if (treeCellSelected) {
+                if (treeCellSelected && treeCellSelected.node) {
                     this._selectTreeCellNode(treeCellSelected);
-                    this.dispatchEventNamed("sceneNodeSelected", true, true, treeCellSelected.node.content.name);
+                    this.dispatchEventNamed("sceneNodeSelected", true, true, treeCellSelected.node.content.glTFElement);
                 }
             }
         }

@@ -69,12 +69,12 @@ exports.SceneTreeFactory = Montage.specialize(/** @lends SceneTreeFactory# */ {
 
     _createSceneTreeNode: {
         value: function (node) {
-            var sceneGraphNode = new SceneTreeNode(node.name),
+            var sceneGraphNode = new SceneTreeNode(node),
                 meshes = node.meshes;
 
             if (Array.isArray(meshes)) {
                 meshes.forEach(function (mesh) {
-                    sceneGraphNode.rawChildren[mesh.name] = new SceneTreeNode(mesh.name);
+                    sceneGraphNode.rawChildren[mesh.name] = new SceneTreeNode(mesh);
                 });
             }
 
