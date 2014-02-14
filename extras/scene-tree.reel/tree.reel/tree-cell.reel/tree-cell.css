@@ -1,3 +1,8 @@
+.TreeCell > div {
+    display: -webkit-flex;
+    align-items: center;
+}
+
 .TreeCell-toggle {
     width: 0;
     height: 0;
@@ -26,6 +31,7 @@
 
 .TreeCell .TreeCell-button {
     -webkit-appearance: none;
+    display: -webkit-flex;
     font-family: inherit;
     font-size: inherit;
     background: none;
@@ -37,7 +43,7 @@
     border: none;
     height: auto;
     padding: 0;
-    margin: 0;
+    margin: 0 0 0 8px;
 }
 
 .TreeCell .TreeCell-button:hover,
@@ -50,6 +56,10 @@
 .TreeCell .TreeCell-label {
     padding: 2px 6px;
     font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    text-transform: capitalize;
 }
 
 .TreeCell .TreeCell-label--selected {
