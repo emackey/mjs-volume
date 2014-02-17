@@ -1,3 +1,5 @@
 .Tree {
-
+    overflow-x: auto;
+    display: -webkit-flex;
+    flex: 1;
 }
