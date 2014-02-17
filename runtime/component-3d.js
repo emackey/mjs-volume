@@ -26,7 +26,7 @@ var glTFNode = require("runtime/glTF-node").glTFNode;
 var Transform = require("runtime/transform").Transform;
 var Target = require("montage/core/target").Target;
 var Set = require("collections/set");
-require("runtime/dependencies/CSSOM");
+var CSSOM = require("cssom");
 require("runtime/dependencies/gl-matrix");
 
 //FIXME: add a state to now that resolution of id pending to avoid adding useless listeners

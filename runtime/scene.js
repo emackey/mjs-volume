@@ -28,6 +28,7 @@ var URL = require("montage/core/url");
 var SceneResourceLoader = require("runtime/scene-resource-loader").SceneResourceLoader;
 var Q = require("q");
 var Target = require("montage/core/target").Target;
+var CSSOM = require("cssom");
 
 exports.Scene = Target.specialize( {
 
