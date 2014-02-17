@@ -27,7 +27,8 @@ require("runtime/dependencies/gl-matrix");
 var Technique = require("runtime/technique").Technique;
 var ScenePass = require("runtime/pass").ScenePass;
 var BuiltInAssets = require("runtime/builtin-assets").BuiltInAssets;
-var o3dgc = require("runtime/dependencies/o3dgc");
+var o3dgc = require("runtime/dependencies/o3dgc").o3dgc;
+
 exports.SceneRenderer = Object.create(Object.prototype, {
 
     loadPickingTechnique: {

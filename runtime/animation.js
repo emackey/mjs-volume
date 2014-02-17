@@ -25,6 +25,7 @@ require("runtime/dependencies/gl-matrix");
 var Base = require("runtime/base").Base;
 var Transform = require("runtime/transform").Transform;
 var Utilities = require("runtime/utilities").Utilities;
+var o3dgc = require("runtime/dependencies/o3dgc").o3dgc;
 
 /** MIT License
  *
