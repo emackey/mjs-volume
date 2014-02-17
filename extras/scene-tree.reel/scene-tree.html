@@ -9,14 +9,9 @@
             "properties": {
                 "element": {"#": "sceneGraphTree"}
             },
-            "listeners": [
-                {
-                    "type": "action",
-                    "listener": {
-                        "@": "owner"
-                    }
-                }
-            ]
+            "bindings": {
+                "selectedNode": {"<-": "@tree.selectedNode"}
+            }
         },
 
         "tree": {

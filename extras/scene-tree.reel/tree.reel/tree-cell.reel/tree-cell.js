@@ -63,7 +63,7 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
             if (this.node) {
                 var indentValue = this.configuration.get("indentValue") * (this.node.depth - 1);
 
-                this.element.style.paddingLeft = indentValue + this.configuration.get("indentUnit");
+                this.element.style.marginLeft = indentValue + this.configuration.get("indentUnit");
             }
         }
     }

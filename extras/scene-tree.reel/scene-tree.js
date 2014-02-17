@@ -5,6 +5,8 @@
 var Component = require("montage/ui/component").Component,
     Dict = require("collections/dict"),
     SceneTreeFactory = require("./core/scene-tree-factory").SceneTreeFactory,
+    Montage = require("montage").Montage,
+    Node = require("runtime/node").Node,
 
     DEFAULT_VALUES = {
         indentValue: 10,
@@ -32,10 +34,6 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         value: null
     },
 
-    _previousNodeSelected: {
-        value: null
-    },
-
     configuration: {
         value: null
     },
@@ -44,60 +42,8 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         value: null
     },
 
-    enterDocument: {
-        value: function (firstime) {
-            if (firstime) {
-                if (this.scene.status === "loaded") {
-                    this.handleStatusChange(this.scene.status);
-                }
-
-                this.scene.addOwnPropertyChangeListener("status", this);
-            }
-        }
-    },
-
-    _populateConfiguration: {
-        value: function () {
-            var self = this;
-
-            Object.keys(DEFAULT_VALUES).forEach(function (key) {
-                self.configuration.set(key, DEFAULT_VALUES[key]);
-            });
-        }
-    },
-
-    handleStatusChange: {
-        value: function(status) {
-            if (status === "loaded" && this.scene) {
-               this.sceneGraphTree = this.scene.rootNode.glTFElement;
-            }
-        }
-    },
-
-    _selectTreeCellNode: {
-        value: function (treeCell) {
-            if (this._previousNodeSelected && this._previousNodeSelected.selected) {
-                this._previousNodeSelected.selected = false;
-            }
-
-            treeCell.selected = true;
-            this._previousNodeSelected = treeCell;
-        }
-    },
-
-    handleNodeElementAction: {
-        value: function (event) {
-            var detail = event.detail;
-
-            if (detail) {
-                var treeCellSelected = detail.get("treeCellSelected");
-
-                if (treeCellSelected && treeCellSelected.node) {
-                    this._selectTreeCellNode(treeCellSelected);
-                    this.dispatchEventNamed("sceneNodeSelected", true, true, treeCellSelected.node.content.glTFElement);
-                }
-            }
-        }
+    selectedNode: {
+        value: null
     },
 
     _sceneGraphTree: {
@@ -112,6 +58,68 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         },
         get: function () {
             return this._sceneGraphTree;
+        }
+    },
+
+    enterDocument: {
+        value: function (firstime) {
+            if (firstime) {
+                if (this.scene.status === "loaded") {
+                    this.handleStatusChange(this.scene.status);
+                }
+
+                this.scene.addOwnPropertyChangeListener("status", this);
+                this.addOwnPropertyChangeListener("selectedNode", this);
+            }
+        }
+    },
+
+    _populateConfiguration: {
+        value: function () {
+            var self = this;
+
+            Object.keys(DEFAULT_VALUES).forEach(function (key) {
+                self.configuration.set(key, DEFAULT_VALUES[key]);
+            });
+        }
+    },
+
+    _createNodeFromGlTFElement: {
+        value: function(glTFNode) {
+            var m3dNode = new Node();
+
+            this.scene.glTFElement.ids[glTFNode.baseId] = glTFNode;
+            m3dNode.scene = this.scene;
+            m3dNode.id = glTFNode.baseId;
+            glTFNode.component3D = m3dNode;
+
+            return m3dNode;
+        }
+    },
+
+    _getComponent3DFromGlTFElement: {
+        value: function (GlTFElement) {
+            return GlTFElement.component3D ? GlTFElement.component3D : this._createNodeFromGlTFElement(GlTFElement);
+        }
+    },
+
+    handleStatusChange: {
+        value: function(status) {
+            if (status === "loaded" && this.scene) {
+               this.sceneGraphTree = this.scene.rootNode.glTFElement;
+            }
+        }
+    },
+
+    handleSelectedNodeChange: {
+        value: function (selectedNode) {
+            var content = selectedNode.content;
+
+            if (content && content.glTFElement) {
+                var component3D = this._getComponent3DFromGlTFElement(content.glTFElement);
+
+                this.dispatchEventNamed("sceneNodeSelected", true, true, component3D);
+            }
         }
     }
 

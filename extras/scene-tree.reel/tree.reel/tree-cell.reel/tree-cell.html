@@ -33,15 +33,6 @@
             }
         },
 
-        "nodeElement": {
-            "prototype": "native/ui/button.reel",
-            "properties": {
-                "element": {"#": "label-button"}
-            },
-            "bindings": {
-                "detail.get('treeCellSelected')": {"<-": "@owner"}
-            }
-        },
 
         "rootCondition": {
             "prototype": "montage/ui/condition.reel",
@@ -59,9 +50,7 @@
     <div data-montage-id="treeCell" class="TreeCell">
         <div data-montage-id="rootCondition">
             <input data-montage-id="expanded" class="TreeCell-toggle" type="checkbox" />
-            <button data-montage-id="label-button" class="TreeCell-button">
-                <span data-montage-id="label" class="TreeCell-label"></span>
-            </button>
+            <span data-montage-id="label" class="TreeCell-label"></span>
         </div>
     </div>
 </body>

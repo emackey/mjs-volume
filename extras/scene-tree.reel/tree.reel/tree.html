@@ -9,6 +9,9 @@
             "properties": {
                 "element": {"#": "tree"}
             },
+            "bindings": {
+                "selectedNode": {"<-": "@rangeController.selection.one()"}
+            },
             "listeners": [
                 {
                     "type": "action",
@@ -17,13 +20,21 @@
             ]
         },
 
+        "rangeController": {
+            "prototype": "montage/core/range-controller",
+            "bindings": {
+                "content": {"<-": "@owner.treeController.iterations"}
+            }
+        },
+
         "treeList": {
             "prototype": "montage/ui/repetition.reel",
             "properties": {
-                "element": {"#": "tree-list"}
+                "element": {"#": "tree-list"},
+                "isSelectionEnabled": true
             },
             "bindings": {
-                "content": {"<-": "@owner.treeController.iterations"}
+                "contentController": {"<-": "@rangeController"}
             }
         },
 

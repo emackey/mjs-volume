@@ -42,6 +42,10 @@ exports.Tree = Component.specialize(/** @lends Tree# */ {
         value: null
     },
 
+    selectedNode: {
+        value: null
+    },
+
     treeController: {
         value: null
     },
