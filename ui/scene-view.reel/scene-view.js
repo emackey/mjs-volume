@@ -71,17 +71,139 @@ require("runtime/dependencies/webgl-debug");
 
 exports.SceneView = Component.specialize( {
 
-    /* constants */
+    /**
+     * If true the viewer will automatically switch from one animated viewPoint to another
+     * @type {boolean}
+     * @default true
+     */
+    automaticallyCyclesThroughViewPoints: { value: true, writable: true },
+
+
+    /**
+     * If false the scene will be shown only when all resources have been loaded.
+     * @type {boolean}
+     * @default true
+     */
+    allowsProgressiveSceneLoading: { value:false, writable:true },
+
+    /**
+     * If false the scene will be shown only when all resources have been loaded.
+     * @type {boolean}
+     * @default true
+     */
+    allowsViewPointControl: { value: true, writable: true },
+
+    /**
+     * A Scene object from runtime/scene to be rendered by SceneView.
+     * @type {object}
+     * @default true
+     */
+    scene: {
+        get: function() {
+            return this._scene;
+        },
+
+        set: function(value) {
+            if (value) {
+                //FIXME:sort of a hack, only set the scene when ready
+                if (value.isLoaded() === false) {
+                    value.addOwnPropertyChangeListener("status", this);
+                    return;
+                } else {
+                    this.needsDraw = true;
+                }
+
+            }
+
+            if (this.scene != value) {
+                this.sceneWillChange(value);
+                this._scene = value;
+                this.sceneDidChange();
+            }
+        }
+    },
+
+    /**
+     * A Scene object from runtime/scene to be rendered by SceneView.
+     * @type {object}
+     * @default true
+     */
+    viewPoint: {
+        get: function() {
+            return this._viewPoint;
+        },
+        set: function(value) {
+            var id = this._viewPoint ? this._viewPoint.id : null;
+            var upcomingId = value ? value.id : null;
+            if (id != upcomingId) {
+                var previousViewPoint = null;
+                if (this._viewPoint && value) {
+                    if (this._viewPoint.scene == value.scene) {
+                        previousViewPoint = this._viewPoint;
+                    }
+                }
+                this.viewPointWillChange(previousViewPoint, value);
+                this._viewPoint = value;
+                var animationManager = this.getAnimationManager();
+                if (animationManager)
+                    animationManager.sceneTime = 0;
+
+                if (value) {
+                    if (this.scene && (this._viewPoint.scene == null)) {
+                        this._viewPoint.scene = this.scene;
+                    }
+                }
+                this.viewPointDidChange();
+            }
+        }
+    },
+
+    play: {
+        value: function() {
+            switch (this._state) {
+                case this.PAUSE:
+                case this.STOP:
+                    this._lastTime = Date.now();
+                    this._state = this.PLAY;
+                    this.needsDraw = true;
+                    break;
+                default:
+                    break;
+            }
+
+            this._state = this.PLAY;
+        }
+    },
+
+    pause: {
+        value: function() {
+            this._state = this.PAUSE;
+        }
+    },
+
+
+    stop: {
+        value: function() {
+            var animationManager = this.getAnimationManager();
+            if (animationManager) {
+                animationManager.sceneTime = 0;
+            }
+            this._state = this.STOP;
+            this.needsDraw = true;
+        }
+    },
+
+    loops: { value: true, writable: true},
+
+    /* all the following section including constants and code is private */
 
     STOP: { value: 0, writable: true },
 
     PLAY: { value: 1, writable: true },
 
     PAUSE: { value: 2, writable: true },
-
-    /* internal */
-
-    _internalViewPoint: { value: null, writable: true },
+ 
+     _internalViewPoint: { value: null, writable: true },
 
     _firstFrameDidRender: { value: false, writable: true },
 
@@ -262,47 +384,7 @@ exports.SceneView = Component.specialize( {
         }
     },
 
-    /* public API */
 
-    /**
-     * If true the viewer will automatically switch from one animated viewPoint to another
-     * @type {boolean}
-     * @default true
-     */
-    automaticallyCyclesThroughViewPoints: { value: true, writable: true },
-
-
-    /**
-     * If false the scene will be shown only when all resources have been loaded.
-     * @type {boolean}
-     * @default true
-     */
-    allowsProgressiveSceneLoading: { value:false, writable:true },
-
-    scene: {
-        get: function() {
-            return this._scene;
-        },
-
-        set: function(value) {
-            if (value) {
-                //FIXME:sort of a hack, only set the scene when ready
-                if (value.isLoaded() === false) {
-                    value.addOwnPropertyChangeListener("status", this);
-                    return;
-                } else {
-                    this.needsDraw = true;
-                }
-
-            }
-
-            if (this.scene != value) {
-                this.sceneWillChange(value);
-                this._scene = value;
-                this.sceneDidChange();
-            }
-        }
-    },
 
     // Montage
 
@@ -312,41 +394,6 @@ exports.SceneView = Component.specialize( {
         }
     },
 
-    play: {
-        value: function() {
-            switch (this._state) {
-                case this.PAUSE:
-                case this.STOP:
-                    this._lastTime = Date.now();
-                    this._state = this.PLAY;
-                    this.needsDraw = true;
-                    break;
-                default:
-                    break;
-            }
-
-            this._state = this.PLAY;
-        }
-    },
-
-    pause: {
-        value: function() {
-            this._state = this.PAUSE;
-        }
-    },
-
-    loops: { value: true, writable: true},
-
-    stop: {
-        value: function() {
-            var animationManager = this.getAnimationManager();
-            if (animationManager) {
-                animationManager.sceneTime = 0;
-            }
-            this._state = this.STOP;
-            this.needsDraw = true;
-        }
-    },
 
     animationDidStart: {
         value: function(animation) {
@@ -434,8 +481,6 @@ exports.SceneView = Component.specialize( {
             }
         }
     },
-
-    allowsViewPointControl: { value: true, writable: true },
 
     viewPoint: {
         get: function() {
