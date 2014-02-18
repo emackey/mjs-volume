@@ -1,3 +1,8 @@
+.TreeCell > div {
+    display: -webkit-flex;
+    align-items: center;
+}
+
 .TreeCell-toggle {
     width: 0;
     height: 0;
@@ -24,35 +29,21 @@
     visibility: hidden;
 }
 
-.TreeCell .TreeCell-button {
-    -webkit-appearance: none;
-    font-family: inherit;
-    font-size: inherit;
-    background: none;
-    text-align: left;
-    border-radius: 0;
-    min-height: 20px;
-    outline: none;
-    min-width: 0;
-    border: none;
-    height: auto;
-    padding: 0;
-    margin: 0;
-}
-
-.TreeCell .TreeCell-button:hover,
-.TreeCell .TreeCell-button:active,
-.TreeCell .TreeCell-button:focus {
-    background-color: transparent;
-    border-color: transparent;
-}
-
 .TreeCell .TreeCell-label {
     padding: 2px 6px;
+    margin-left: 6px;
     font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    text-transform: capitalize;
 }
 
-.TreeCell .TreeCell-label--selected {
-    background-color: #E7E7E7;
+.TreeCell.selected .TreeCell-label {
+    background-color: #1F1F1F;
     border-radius: 6px;
+}
+
+.TreeCell .TreeCell-label:hover {
+    cursor: pointer;
 }
