@@ -580,8 +580,11 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
                         if (compressionObject) {
                             var compressedData = compressionObject["compressedData"];
                             if (compressedData) {
-                                compressedData.bufferView = this.getEntry(compressedData.bufferView).entry;
-                                compressedData.id = entryID + parameterSID + "_compressedData";
+                                //we may have already set this bufferView for shared accessors
+                                if (typeof compressedData.bufferView !== "object") {
+                                    compressedData.bufferView = this.getEntry(compressedData.bufferView).entry;
+                                    compressedData.id = entryID + parameterSID + "_compressedData";
+                                }
                             }
                         }
                     }
