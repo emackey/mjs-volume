@@ -113,10 +113,8 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
 
     handleSelectedNodeChange: {
         value: function (selectedNode) {
-            var content = selectedNode.content;
-
-            if (content && content.glTFElement) {
-                var component3D = this._getComponent3DFromGlTFElement(content.glTFElement);
+            if (selectedNode && selectedNode.content && selectedNode.content.glTFElement) {
+                var component3D = this._getComponent3DFromGlTFElement(selectedNode.content.glTFElement);
 
                 this.dispatchEventNamed("sceneNodeSelected", true, true, component3D);
             }
