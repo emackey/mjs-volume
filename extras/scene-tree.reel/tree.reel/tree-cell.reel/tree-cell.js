@@ -2,7 +2,8 @@
  * @module ui/tree-cell.reel
  * @requires montage/ui/component
  */
-var Component = require("montage/ui/component").Component;
+var Component = require("montage/ui/component").Component,
+    MIME_TYPES = require("extras/scene-tree.reel/core/mime-types");
 
 /**
  * @class TreeCell
@@ -58,12 +59,43 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
         }
     },
 
+    isDraggable: {
+        value: null
+    },
+
+    enterDocument: {
+        value: function (firstTime) {
+            if (firstTime) {
+                if (this.isDraggable) {
+                    this._element.addEventListener("dragstart", this, true);
+                }
+            }
+        }
+    },
+
+    captureDragstart: {
+        value: function (event) {
+            if (this._node && this._node.content && this._node.content.glTFElement) {
+                var dataTransfer = event.dataTransfer;
+
+                if (dataTransfer) {
+                    dataTransfer.effectAllowed = 'move';
+                    dataTransfer.setData(MIME_TYPES.TEXT_PLAIN, this._node.content.glTFElement.id);
+                }
+            }
+        }
+    },
+
     draw: {
         value: function () {
             if (this.node) {
                 var indentValue = this.configuration.get("indentValue") * (this.node.depth - 1);
 
-                this.element.style.marginLeft = indentValue + this.configuration.get("indentUnit");
+                this._element.style.marginLeft = indentValue + this.configuration.get("indentUnit");
+
+                if (this.isDraggable) {
+                    this._element.setAttribute("draggable", "true");
+                }
             }
         }
     }

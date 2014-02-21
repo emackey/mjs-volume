@@ -50,6 +50,10 @@ exports.Tree = Component.specialize(/** @lends Tree# */ {
         value: null
     },
 
+    isCellDraggable: {
+        value: null
+    },
+
     handleExpandedAction: {
         value: function (event) {
             var treeCell = event.target.ownerComponent;

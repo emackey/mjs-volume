@@ -61,6 +61,10 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         }
     },
 
+    isCellDraggable: {
+        value: null
+    },
+
     enterDocument: {
         value: function (firstime) {
             if (firstime) {
