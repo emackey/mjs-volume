@@ -3,6 +3,7 @@
  * @requires montage/ui/component
  */
 var Component = require("montage/ui/component").Component,
+    NODE_TYPES = require("extras/scene-tree.reel/core/scene-tree-node").SceneTreeNodeTypes,
     MIME_TYPES = require("extras/scene-tree.reel/core/mime-types");
 
 /**
@@ -33,6 +34,10 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
         value: null
     },
 
+    type: {
+        value: null
+    },
+
     selected: {
         value: null
     },
@@ -52,6 +57,7 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
 
                 this.name = iteration.content.name;
                 this._node = iteration;
+                this.type = iteration.content.type;
             }
         },
         get: function () {
@@ -95,6 +101,14 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
 
                 if (this.isDraggable) {
                     this._element.setAttribute("draggable", "true");
+                }
+
+                var nodeTypeElement = this.templateObjects.nodeTypeLabel;
+
+                if (this.type === NODE_TYPES.MESH) {
+                    nodeTypeElement.value = "M";
+                } else {
+                    nodeTypeElement.value = "N";
                 }
             }
         }

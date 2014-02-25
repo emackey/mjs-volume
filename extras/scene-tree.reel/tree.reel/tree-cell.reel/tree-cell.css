@@ -47,3 +47,7 @@
 .TreeCell .TreeCell-label:hover {
     cursor: pointer;
 }
+
+.TreeCell-type {
+    margin-left: auto;
+}

@@ -3,3 +3,9 @@
     display: -webkit-flex;
     flex: 1;
 }
+
+.Tree-list {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
