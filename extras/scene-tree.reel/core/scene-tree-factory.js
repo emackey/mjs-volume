@@ -2,7 +2,9 @@
  * @requires montage/ui/component
  */
 var Montage = require("montage").Montage,
-    SceneTreeNode = require("./scene-tree-node").SceneTreeNode;
+    SCENE_TREE_NODE = require("./scene-tree-node"),
+    SceneTreeNode = SCENE_TREE_NODE.SceneTreeNode,
+    NODE_TYPES = SCENE_TREE_NODE.SceneTreeNodeTypes;
 
 /**
  * @class SceneTreeFactory
@@ -74,7 +76,7 @@ exports.SceneTreeFactory = Montage.specialize(/** @lends SceneTreeFactory# */ {
 
             if (Array.isArray(meshes)) {
                 meshes.forEach(function (mesh) {
-                    sceneGraphNode.rawChildren[mesh.name] = new SceneTreeNode(mesh);
+                    sceneGraphNode.rawChildren[mesh.name] = new SceneTreeNode(mesh, NODE_TYPES.MESH);
                 });
             }
 
