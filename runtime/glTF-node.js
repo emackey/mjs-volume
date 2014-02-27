@@ -73,7 +73,7 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
     _computeBBOXIfNeeded: {
         enumerable: false,
         value: function() {
-            if (!this._boundingBox) {
+            if (this._boundingBox == null) {
                 var meshes = this._properties["meshes"];
                 var count = this.meshes.length;
                 if (count > 0) {
@@ -98,24 +98,19 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
             //FIXME: this code is inefficient, BBOX be cached with dirty flags and invalidation (just like for worldMatrix)
             if (includesHierarchy) {
                 var ctx = mat4.identity();
-                var hierarchicalBBOX = this.boundingBox;
+                var hierarchicalBBOX = null;
                 this.apply( function(node, parent, parentTransform) {
-                    var modelMatrix = mat4.create();
-                    mat4.multiply( parentTransform, node.transform.matrix, modelMatrix);
                     if (node.boundingBox) {
-                        var bbox = Utilities.transformBBox(node.boundingBox, modelMatrix);
-
-                        if (hierarchicalBBOX) {
-                            if (node.meshes) {
-                                if (node.meshes.length > 0)
-                                    hierarchicalBBOX = Utilities.mergeBBox(bbox, hierarchicalBBOX);
-                            }
+                        var bbox = Utilities.transformBBox(node.boundingBox, node.worldMatrix);
+                        if (hierarchicalBBOX != null) {
+                            hierarchicalBBOX = Utilities.mergeBBox(bbox, hierarchicalBBOX);
                         } else {
                             hierarchicalBBOX = bbox;
                         }
                     }
-                    return modelMatrix;
+                    return null;
                 }, true, ctx);
+
                 return hierarchicalBBOX;
             } else {
                 return this.boundingBox;

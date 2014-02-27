@@ -1038,7 +1038,7 @@ exports.SceneView = Component.specialize( {
                 if (glTFNode.getBoundingBox != null) { //work-around issue with scene-tree
                     var cameraMatrix = this.sceneRenderer.technique.rootPass.scenePassRenderer._viewPointMatrix;            
                     var projectionMatrix = this.viewPoint.glTFElement.cameras[0].projection.matrix;
-                    this.getWebGLRenderer().drawBBOX(glTFNode.getBoundingBox(true), cameraMatrix, glTFNode.worldMatrix, projectionMatrix);
+                    this.getWebGLRenderer().drawBBOX(glTFNode.getBoundingBox(true), cameraMatrix, mat4.identity(), projectionMatrix);
                 }
             }
         }
