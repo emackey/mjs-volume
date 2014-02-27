@@ -124,9 +124,8 @@ exports.SceneView = Component.specialize( {
     },
 
     /**
-     * A Scene object from runtime/scene to be rendered by SceneView.
+     * 
      * @type {object}
-     * @default true
      */
     viewPoint: {
         get: function() {
@@ -195,7 +194,9 @@ exports.SceneView = Component.specialize( {
 
     loops: { value: true, writable: true},
 
-    /* all the following section including constants and code is private */
+    /* Private / Internal section
+        all the following section including constants and code is private 
+    */
 
     STOP: { value: 0, writable: true },
 
@@ -409,8 +410,6 @@ exports.SceneView = Component.specialize( {
         value: function(animation) {
         }
     },
-
-    __viewPointAnimationStep: { value: 0, writable: true },
 
     animationDidUpdate: {
         value: function(animation) {

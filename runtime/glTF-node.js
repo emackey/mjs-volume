@@ -310,7 +310,6 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
 
             if (callback) {
                 ctx = callback(this, parent, ctx);
-
                 if (recurse) {
                     this.children.forEach( function(node) {
                         node._apply(callback, recurse, this, ctx);
