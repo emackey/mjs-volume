@@ -38,8 +38,19 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         value: null
     },
 
-    scene: {
+    _scene: {
         value: null
+    },
+
+    scene: {
+        set: function (scene) {
+            if (scene && typeof scene === "object") {
+                this._scene = scene;
+            }
+        },
+        get: function () {
+            return this._scene;
+        }
     },
 
     selectedNode: {
@@ -68,12 +79,8 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
     enterDocument: {
         value: function (firstime) {
             if (firstime) {
-                if (this.scene.status === "loaded") {
-                    this.handleStatusChange(this.scene.status);
-                }
-
-                this.scene.addOwnPropertyChangeListener("status", this);
                 this.addOwnPropertyChangeListener("selectedNode", this);
+                this.addPathChangeListener("scene.status", this, "handleStatusChange");
             }
         }
     },
@@ -93,7 +100,7 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
             var m3dNode = new Node();
 
             this.scene.glTFElement.ids[glTFNode.baseId] = glTFNode;
-            m3dNode.scene = this.scene;
+            m3dNode.scene = this._scene;
             m3dNode.id = glTFNode.baseId;
             glTFNode.component3D = m3dNode;
 
@@ -109,8 +116,8 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
 
     handleStatusChange: {
         value: function(status) {
-            if (status === "loaded" && this.scene) {
-               this.sceneGraphTree = this.scene.rootNode.glTFElement;
+            if (status === "loaded" && this._scene) {
+                this.sceneGraphTree = this._scene.rootNode.glTFElement;
             }
         }
     },
