@@ -52,7 +52,6 @@ var Point = require("montage/core/geometry/point").Point;
 var TranslateComposer = require("montage/composer/translate-composer").TranslateComposer;
 var BuiltInAssets = require("runtime/builtin-assets").BuiltInAssets;
 var WebGLRenderer = require("runtime/webgl-renderer").WebGLRenderer;
-var URL = require("montage/core/url");
 var Projection = require("runtime/projection").Projection;
 var BasicAnimation = require("runtime/animation").BasicAnimation;
 var Camera = require("runtime/camera").Camera;
