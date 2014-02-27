@@ -7,6 +7,7 @@ var Component = require("montage/ui/component").Component,
     SceneTreeFactory = require("./core/scene-tree-factory").SceneTreeFactory,
     Montage = require("montage").Montage,
     Node = require("runtime/node").Node,
+    Application = require("montage/core/application").Application
 
     DEFAULT_VALUES = {
         indentValue: 10,
@@ -126,8 +127,7 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         value: function (selectedNode) {
             if (selectedNode && selectedNode.content && selectedNode.content.glTFElement) {
                 var component3D = this._getComponent3DFromGlTFElement(selectedNode.content.glTFElement);
-
-                this.dispatchEventNamed("sceneNodeSelected", true, true, component3D);
+                Application.dispatchEventNamed("sceneNodeSelected", true, true, component3D);
             }
         }
     }

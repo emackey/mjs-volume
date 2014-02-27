@@ -62,6 +62,7 @@ var CameraController = require("controllers/camera-controller").CameraController
 var Transform = require("runtime/transform").Transform;
 var Component3D = require("runtime/component-3d").Component3D;
 var ActionDispatcher = require("runtime/action-dispatcher").ActionDispatcher;
+var Application = require("montage/core/application").Application;
 require("runtime/dependencies/webgl-debug");
 /**
     Description TODO
@@ -317,7 +318,7 @@ exports.SceneView = Component.specialize( {
                 this._scene.removeEventListener("cursorUpdate", this);
                 this._scene.removeEventListener("materialUpdate", this);
                 this._scene.removeEventListener("textureUpdate", this);
-                this._scene.removeEventListener("sceneNodeSelected", this);
+                Application.removeEventListener("sceneNodeSelected", this);
             }
         }
     },
@@ -330,7 +331,7 @@ exports.SceneView = Component.specialize( {
                 this._scene.addEventListener("cursorUpdate", this);
                 this._scene.addEventListener("textureUpdate", this);
                 this._scene.addEventListener("materialUpdate", this);
-                this._scene.addEventListener("sceneNodeSelected", this);
+                Application.addEventListener("sceneNodeSelected", this);
                 this.applyScene();
                 if (this.delegate) {
                     if (this.delegate.sceneDidChange) {
@@ -711,8 +712,6 @@ exports.SceneView = Component.specialize( {
             this.canvas.removeEventListener(wheelEventName, composer, true);
             this.canvas.removeEventListener(wheelEventName, composer, false);
 
-
-
             var simulateContextLoss = false;  //Very naive for now
 
             if (simulateContextLoss) {
@@ -1033,15 +1032,14 @@ exports.SceneView = Component.specialize( {
 
     displayBBOX: {
         value: function(glTFNode) {
-            debugger;
             if (!this.scene)
                 return;
             if (this.scene.glTFElement) {
-                var cameraMatrix = this.sceneRenderer.technique.rootPass.scenePassRenderer._viewPointMatrix;            
-                var node = glTFNode;
-
-                var projectionMatrix = this.viewPoint.glTFElement.cameras[0].projection.matrix;
-                this.getWebGLRenderer().drawBBOX(node.getBoundingBox(true), cameraMatrix, node.worldMatrix, projectionMatrix);
+                if (glTFNode.getBoundingBox != null) { //work-around issue with scene-tree
+                    var cameraMatrix = this.sceneRenderer.technique.rootPass.scenePassRenderer._viewPointMatrix;            
+                    var projectionMatrix = this.viewPoint.glTFElement.cameras[0].projection.matrix;
+                    this.getWebGLRenderer().drawBBOX(glTFNode.getBoundingBox(true), cameraMatrix, glTFNode.worldMatrix, projectionMatrix);
+                }
             }
         }
     },
