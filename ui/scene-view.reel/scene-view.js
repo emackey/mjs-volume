@@ -1257,9 +1257,9 @@ exports.SceneView = Component.specialize( {
                     //FIXME: ...create an API to retrieve the actual viewPoint matrix...
                     if (this.showBBOX)
                         this.displayAllBBOX();
-                    if (this.selectedNode) {
-                        this.displayBBOX(this.selectedNode.glTFElement);
-                    }
+                    //if (this.selectedNode) {
+                    //    this.displayBBOX(this.selectedNode.glTFElement);
+                    //}
 
                     webGLContext.flush();
 
