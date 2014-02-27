@@ -238,7 +238,7 @@ exports.SceneView = Component.specialize( {
     _contextAttributes : { value: null, writable: true },
 
     //FIXME: figure out why the clear made by the browser isn't performed when no draw element is performed
-    _shouldForceClear: { value: true, writable: true },
+    _shouldForceClear: { value: false, writable: true },
 
     _viewPointIndex: { value: 0, writable: true },
 
@@ -317,6 +317,7 @@ exports.SceneView = Component.specialize( {
                 this._scene.removeEventListener("cursorUpdate", this);
                 this._scene.removeEventListener("materialUpdate", this);
                 this._scene.removeEventListener("textureUpdate", this);
+                this._scene.removeEventListener("sceneNodeSelected", this);
             }
         }
     },
@@ -329,6 +330,7 @@ exports.SceneView = Component.specialize( {
                 this._scene.addEventListener("cursorUpdate", this);
                 this._scene.addEventListener("textureUpdate", this);
                 this._scene.addEventListener("materialUpdate", this);
+                this._scene.addEventListener("sceneNodeSelected", this);
                 this.applyScene();
                 if (this.delegate) {
                     if (this.delegate.sceneDidChange) {
@@ -881,7 +883,6 @@ exports.SceneView = Component.specialize( {
                 this._eventType = -1;
             }
 
-
             if (glTFElementID) {
                 glTFElement = this.scene.glTFElement.ids[glTFElementID];
             }
@@ -889,7 +890,6 @@ exports.SceneView = Component.specialize( {
             //are we out of a move ?
             if (previousGlTFElement && previousHandledComponent3D && this._previousEventType === this._TOUCH_MOVE &&
                 glTFElement !== previousGlTFElement) {
-
                 previousHandledComponent3D.handleActionOnGlTFElement(previousGlTFElement, Component3D._EXIT);
             }
 
@@ -1024,24 +1024,44 @@ exports.SceneView = Component.specialize( {
         }
     },
 
-    displayAllBBOX: {
-        value: function(cameraMatrix) {
+    handleSceneNodeSelected: {
+        value: function(event) {
+            this.selectedNode = event.detail;
+            this.needsDraw = true;
+        }
+    },
+
+    displayBBOX: {
+        value: function(glTFNode) {
+            debugger;
             if (!this.scene)
                 return;
             if (this.scene.glTFElement) {
+                var cameraMatrix = this.sceneRenderer.technique.rootPass.scenePassRenderer._viewPointMatrix;            
+                var node = glTFNode;
+
+                var projectionMatrix = this.viewPoint.glTFElement.cameras[0].projection.matrix;
+                this.getWebGLRenderer().drawBBOX(node.getBoundingBox(true), cameraMatrix, node.worldMatrix, projectionMatrix);
+            }
+        }
+    },
+
+    displayAllBBOX: {
+        value: function() {
+            if (!this.scene)
+                return;
+            if (this.scene.glTFElement) {
+                var cameraMatrix = this.sceneRenderer.technique.rootPass.scenePassRenderer._viewPointMatrix;            
                 var ctx = mat4.identity();
                 var node = this.scene.glTFElement.rootNode;
                 var self = this;
 
-                node.apply( function(node, parent, parentTransform) {
-                    var modelMatrix = mat4.create();
-                    mat4.multiply( parentTransform, node.transform.matrix, modelMatrix);
+                node.apply( function(node, parent, ctx) {
                     if (node.boundingBox) {
-                        var viewPoint = self.viewPoint;
-                        var projectionMatrix = viewPoint.glTFElement.cameras[0].projection.matrix;
-                        self.getWebGLRenderer().drawBBOX(node.boundingBox, cameraMatrix, modelMatrix, projectionMatrix);
+                        var projectionMatrix = self.viewPoint.glTFElement.cameras[0].projection.matrix;
+                        self.getWebGLRenderer().drawBBOX(node.boundingBox, cameraMatrix, node.worldMatrix, projectionMatrix);
                     }
-                    return modelMatrix;
+                    return null;
                 }, true, ctx);
             }
         }
@@ -1238,7 +1258,10 @@ exports.SceneView = Component.specialize( {
 
                     //FIXME: ...create an API to retrieve the actual viewPoint matrix...
                     if (this.showBBOX)
-                        this.displayAllBBOX(this.sceneRenderer.technique.rootPass.scenePassRenderer._viewPointMatrix);
+                        this.displayAllBBOX();
+                    if (this.selectedNode) {
+                        this.displayBBOX(this.selectedNode.glTFElement);
+                    }
 
                     webGLContext.flush();
 
