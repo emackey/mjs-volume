@@ -1028,7 +1028,7 @@ exports.SceneView = Component.specialize( {
         }
     },
 
-    displayBBOX: {
+    _displayBBOX: {
         value: function(glTFNode) {
             if (!this.scene)
                 return;
@@ -1042,7 +1042,7 @@ exports.SceneView = Component.specialize( {
         }
     },
 
-    displayAllBBOX: {
+    _displayAllBBOX: {
         value: function() {
             if (!this.scene)
                 return;
@@ -1053,10 +1053,7 @@ exports.SceneView = Component.specialize( {
                 var self = this;
 
                 node.apply( function(node, parent, ctx) {
-                    if (node.boundingBox) {
-                        var projectionMatrix = self.viewPoint.glTFElement.cameras[0].projection.matrix;
-                        self.getWebGLRenderer().drawBBOX(node.boundingBox, cameraMatrix, node.worldMatrix, projectionMatrix);
-                    }
+                        self._displayBBOX(node);
                     return null;
                 }, true, ctx);
             }
@@ -1131,6 +1128,13 @@ exports.SceneView = Component.specialize( {
                 webGLContext.clearColor(0,0,0,0.);
                 webGLContext.clear(webGLContext.DEPTH_BUFFER_BIT | webGLContext.COLOR_BUFFER_BIT);
             }
+
+            if (this.delegate) {
+                if (this.delegate.sceneWillDraw) {
+                    this.delegate.sceneWillDraw();
+                }
+            }
+
 
             if ((this.allowsProgressiveSceneLoading === false) && (this._sceneResourcesLoaded === false)) {
                 return;
@@ -1253,11 +1257,15 @@ exports.SceneView = Component.specialize( {
                     this.sceneRenderer.render(time, this.__renderOptions);
 
                     //FIXME: ...create an API to retrieve the actual viewPoint matrix...
-                    if (this.showBBOX)
-                        this.displayAllBBOX();
-                    //if (this.selectedNode) {
-                    //    this.displayBBOX(this.selectedNode.glTFElement);
-                    //}
+                    if (this.showBBOX) {
+                        this._displayAllBBOX();
+                    }
+                    
+                    if (this.delegate) {
+                        if (this.delegate.sceneDidDraw) {
+                            this.delegate.sceneDidDraw();
+                        }
+                    }
 
                     webGLContext.flush();
 
@@ -1265,6 +1273,7 @@ exports.SceneView = Component.specialize( {
                         this._firstFrameDidRender = true;
                         this.dispatchEventNamed("firstFrameDidRender", true, false, this);
                     }
+
                     /*
                     var error = webGLContext.getError();
                     if (error != webGLContext.NO_ERROR) {
