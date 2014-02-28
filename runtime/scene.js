@@ -209,6 +209,10 @@ exports.Scene = Target.specialize( {
             }
             return this;
         }
-    }
+    },
+
+    blueprintModuleId:require("montage")._blueprintModuleIdDescriptor,
+
+    blueprint:require("montage")._blueprintDescriptor
 
 });
