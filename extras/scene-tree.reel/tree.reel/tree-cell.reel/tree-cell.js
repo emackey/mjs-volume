@@ -86,7 +86,7 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
 
                 if (dataTransfer) {
                     dataTransfer.effectAllowed = 'move';
-                    dataTransfer.setData(MIME_TYPES.TEXT_PLAIN, this._node.content.glTFElement.id);
+                    dataTransfer.setData(MIME_TYPES.TEXT_PLAIN, this._node.content.glTFElement.baseId);
                 }
             }
         }
