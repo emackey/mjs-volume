@@ -12,7 +12,8 @@ var Component = require("montage/ui/component").Component,
 
     DEFAULT_VALUES = {
         indentValue: 10,
-        indentUnit: "px"
+        indentUnit: "px",
+        meshesEnabled: false
     };
 
 /**
@@ -25,8 +26,8 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         value: function SceneGraphTree() {
             this.super();
 
-            this._treeFactory = SceneTreeFactory.create();
             this.configuration = Dict();
+            this._treeFactory = new SceneTreeFactory(this.configuration);
 
             this._populateConfiguration();
         }

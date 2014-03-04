@@ -13,9 +13,15 @@ var Montage = require("montage").Montage,
 exports.SceneTreeFactory = Montage.specialize(/** @lends SceneTreeFactory# */ {
 
     constructor: {
-        value: function SceneTreeFactory() {
+        value: function SceneTreeFactory(configuration) {
             this.super();
+
+            this._configuration = configuration;
         }
+    },
+
+    _configuration: {
+        value: null
     },
 
     _sceneGraphTree: {
@@ -74,7 +80,7 @@ exports.SceneTreeFactory = Montage.specialize(/** @lends SceneTreeFactory# */ {
             var sceneGraphNode = new SceneTreeNode(node),
                 meshes = node.meshes;
 
-            if (Array.isArray(meshes)) {
+            if (Array.isArray(meshes) && this._configuration.get("meshesEnabled")) {
                 meshes.forEach(function (mesh) {
                     sceneGraphNode.rawChildren[mesh.name] = new SceneTreeNode(mesh, NODE_TYPES.MESH);
                 });
