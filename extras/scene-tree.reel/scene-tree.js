@@ -5,9 +5,10 @@
 var Component = require("montage/ui/component").Component,
     Dict = require("collections/dict"),
     SceneTreeFactory = require("./core/scene-tree-factory").SceneTreeFactory,
-    Montage = require("montage").Montage,
+    Application = require("montage/core/application").Application,
+
+    /*jshint -W079 */
     Node = require("runtime/node").Node,
-    Application = require("montage/core/application").Application
 
     DEFAULT_VALUES = {
         indentValue: 10,
