@@ -50,6 +50,10 @@ exports.Tree = Component.specialize(/** @lends Tree# */ {
         value: null
     },
 
+    rangeController: {
+        value: null
+    },
+
     isCellDraggable: {
         value: null
     },
@@ -58,19 +62,10 @@ exports.Tree = Component.specialize(/** @lends Tree# */ {
         value: function (event) {
             var treeCell = event.target.ownerComponent;
 
-            if (treeCell && !treeCell.fulfilled) {
+            // treeCell.node.content => its SceneTreeNode
+            if (treeCell && !treeCell.node.content.fulfilled) {
                 treeCell.node.expanded = false;
-
-                var children = [],
-                    rawChildren = treeCell.node.content.rawChildren,
-                    rawChildrenKeys = Object.keys(rawChildren);
-
-                for (var i = 0, length = rawChildrenKeys.length; i < length; i++) {
-                    children.push(rawChildren[rawChildrenKeys[i]]);
-                }
-
-                treeCell.fulfilled = true;
-                treeCell.node.content.children = children;
+                treeCell.node.content.fulfill();
                 treeCell.node.expanded = true;
             }
         }

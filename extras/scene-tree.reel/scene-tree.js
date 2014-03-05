@@ -79,6 +79,14 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         value: null
     },
 
+    treeController: {
+        value: null
+    },
+
+    rangeController: {
+        value: null
+    },
+
     enterDocument: {
         value: function (firstime) {
             if (firstime) {
@@ -130,6 +138,98 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
             if (selectedNode && selectedNode.content && selectedNode.content.glTFElement) {
                 var component3D = this._getComponent3DFromGlTFElement(selectedNode.content.glTFElement);
                 Application.dispatchEventNamed("sceneNodeSelected", true, true, component3D);
+            }
+        }
+    },
+
+    _findSceneTreeNodeByName: {
+        value: function (name, currentNode) {
+            var node = null,
+                self = this,
+                children = null;
+
+            if (!currentNode) {
+                children = this.treeController.root.content.children;
+
+            } else {
+                var rawChildren = currentNode.rawChildren;
+
+                children = Object.keys(rawChildren).map(function (key) {
+                    return rawChildren[key];
+                });
+            }
+
+            children.some(function (sceneTreeNode) {
+                if (sceneTreeNode.name === name) {
+                    node = sceneTreeNode;
+
+                    return true;
+                }
+
+                node = self._findSceneTreeNodeByName(name, sceneTreeNode);
+
+                return !!node;
+            });
+
+            return node;
+        }
+    },
+
+    _fulfillSceneTreeNodePath: {
+        value: function (path) {
+            if (Array.isArray(path)) {
+
+                path.forEach(function (sceneTreeNode) {
+                    if (!sceneTreeNode.fulfilled) {
+                        sceneTreeNode.fulfill();
+                    }
+                });
+            }
+        }
+    },
+
+    _expandTreeControllerNode: {
+        value: function (treeControllerNode) {
+            if (treeControllerNode && !treeControllerNode.expanded) {
+                treeControllerNode.expanded = true;
+
+                this._expandTreeControllerNode(treeControllerNode.parent);
+            }
+        }
+    },
+
+    _findTreeControllerNodeByName: {
+        value: function (name) {
+            var nodes = this.treeController.root.nodes,
+                node = null;
+
+            nodes.some(function (treeControllerNode) {
+                if (treeControllerNode.content.name === name) {
+                    node = treeControllerNode;
+                }
+
+                return !!node;
+            });
+
+            return node;
+        }
+    },
+
+    selectTreeControllerNodeByName: {
+        value: function (name) {
+            var sceneNodeTree = this._findSceneTreeNodeByName(name);
+
+            if (sceneNodeTree) {
+                var path = sceneNodeTree.toParentPath();
+
+                if (path) {
+                    this._fulfillSceneTreeNodePath(path);
+
+                    var treeControllerNode = this._findTreeControllerNodeByName(name);
+
+                    this._expandTreeControllerNode(treeControllerNode.parent);
+                    this.rangeController.select(treeControllerNode);
+                }
             }
         }
     }

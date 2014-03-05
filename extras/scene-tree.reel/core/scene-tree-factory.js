@@ -58,15 +58,15 @@ exports.SceneTreeFactory = Montage.specialize(/** @lends SceneTreeFactory# */ {
     },
 
     _examineNode: {
-        value: function (node) {
+        value: function (node, parent) {
             var nodeChildren = node.children,
-                sceneGraphNode = this._createSceneTreeNode(node);
+                sceneGraphNode = this._createSceneTreeNode(node, parent);
 
             if (Array.isArray(nodeChildren)) {
                 var self = this;
 
                 nodeChildren.forEach(function (childNode) {
-                    var nodeExamined = self._examineNode(childNode);
+                    var nodeExamined = self._examineNode(childNode, sceneGraphNode);
                     sceneGraphNode.rawChildren[nodeExamined.name] = nodeExamined;
                 });
             }
@@ -76,13 +76,13 @@ exports.SceneTreeFactory = Montage.specialize(/** @lends SceneTreeFactory# */ {
     },
 
     _createSceneTreeNode: {
-        value: function (node) {
-            var sceneGraphNode = new SceneTreeNode(node),
+        value: function (node, parent) {
+            var sceneGraphNode = new SceneTreeNode(node, NODE_TYPES.NODE, parent),
                 meshes = node.meshes;
 
             if (Array.isArray(meshes) && this._configuration.get("meshesEnabled")) {
                 meshes.forEach(function (mesh) {
-                    sceneGraphNode.rawChildren[mesh.name] = new SceneTreeNode(mesh, NODE_TYPES.MESH);
+                    sceneGraphNode.rawChildren[mesh.name] = new SceneTreeNode(mesh, NODE_TYPES.MESH, sceneGraphNode);
                 });
             }
 

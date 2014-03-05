@@ -19,7 +19,7 @@ exports.SceneTreeNodeTypes = SceneTreeNodeTypes;
 exports.SceneTreeNode = Montage.specialize(/** @lends SceneTreeNode# */ {
 
     constructor: {
-        value: function SceneTreeNode(glTFElement, type) {
+        value: function SceneTreeNode(glTFElement, type, parent) {
             this.super();
 
             this.name = glTFElement.name;
@@ -27,6 +27,8 @@ exports.SceneTreeNode = Montage.specialize(/** @lends SceneTreeNode# */ {
             this.children = [];
             this.rawChildren = {};
             this.type = type || SceneTreeNodeTypes.NODE;
+            this.fulfilled = false;
+            this.parent = parent;
         }
     },
 
@@ -59,6 +61,50 @@ exports.SceneTreeNode = Montage.specialize(/** @lends SceneTreeNode# */ {
 
     rawChildren: {
         value: null
+    },
+
+    parent: {
+        value: null
+    },
+
+    fulfilled: {
+        value: null
+    },
+
+    fulfill: {
+        value: function () {
+            if (this.rawChildren && !this.fulfilled) {
+                var children = [],
+                    rawChildren = this.rawChildren,
+                    rawChildrenKeys = Object.keys(rawChildren);
+
+                for (var i = 0, length = rawChildrenKeys.length; i < length; i++) {
+                    children.push(rawChildren[rawChildrenKeys[i]]);
+                }
+
+                this.children = children;
+            }
+
+            this.fulfilled = true;
+        }
+    },
+
+    toParentPath: {
+        value: function (currentSceneTreeNode, path) {
+            if (!currentSceneTreeNode || !Array.isArray(path)) {
+                currentSceneTreeNode = this;
+                path = [currentSceneTreeNode];
+            }
+
+            if (currentSceneTreeNode && currentSceneTreeNode.parent) {
+                var parent = currentSceneTreeNode.parent;
+                path.unshift(parent);
+
+                return this.toParentPath(parent, path);
+            }
+
+            return path;
+        }
     }
 
 });
