@@ -13,7 +13,8 @@ var Component = require("montage/ui/component").Component,
     DEFAULT_VALUES = {
         indentValue: 10,
         indentUnit: "px",
-        meshesEnabled: false
+        meshesEnabled: false,
+        displayNodeType: false
     };
 
 /**

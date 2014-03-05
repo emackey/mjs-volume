@@ -95,12 +95,14 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
                     this._element.setAttribute("draggable", "true");
                 }
 
-                var nodeTypeElement = this.templateObjects.nodeTypeLabel;
+                if (this.configuration.get("displayNodeType")) {
+                    var nodeTypeElement = this.templateObjects.nodeTypeLabel;
 
-                if (this.type === NODE_TYPES.MESH) {
-                    nodeTypeElement.value = "M";
-                } else {
-                    nodeTypeElement.value = "N";
+                    if (this.type === NODE_TYPES.MESH) {
+                        nodeTypeElement.value = "M";
+                    } else {
+                        nodeTypeElement.value = "N";
+                    }
                 }
             }
         }
