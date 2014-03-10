@@ -160,6 +160,10 @@ exports.Node = Component3D.specialize( {
     hidden: {
         set: function(value) {
             if (this._hidden != value) {
+                //FIXME: work-around visibility && hidden properties competing here.
+                //hidden, historical, and visibility because of CSS
+                this.visibility = (value === true) ? "hidden" : "visible";
+
                 this._hidden = value;
             }
         },
