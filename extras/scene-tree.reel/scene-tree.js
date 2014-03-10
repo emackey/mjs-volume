@@ -143,8 +143,8 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         }
     },
 
-    _findSceneTreeNodeByName: {
-        value: function (name, currentNode) {
+    _findSceneTreeNodeById: {
+        value: function (id, currentNode) {
             var node = null,
                 self = this,
                 children = null;
@@ -161,13 +161,13 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
             }
 
             children.some(function (sceneTreeNode) {
-                if (sceneTreeNode.name === name) {
+                if (sceneTreeNode.glTFElement && sceneTreeNode.glTFElement.baseId === id) {
                     node = sceneTreeNode;
 
                     return true;
                 }
 
-                node = self._findSceneTreeNodeByName(name, sceneTreeNode);
+                node = self._findSceneTreeNodeById(id, sceneTreeNode);
 
                 return !!node;
             });
@@ -199,13 +199,15 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         }
     },
 
-    _findTreeControllerNodeByName: {
-        value: function (name) {
+    _findTreeControllerNodeById: {
+        value: function (id) {
             var nodes = this.treeController.root.nodes,
                 node = null;
 
             nodes.some(function (treeControllerNode) {
-                if (treeControllerNode.content.name === name) {
+                var content = treeControllerNode.content;
+
+                if (content.glTFElement && content.glTFElement.baseId === id) {
                     node = treeControllerNode;
                 }
 
@@ -216,9 +218,9 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         }
     },
 
-    selectTreeControllerNodeByName: {
-        value: function (name) {
-            var sceneNodeTree = this._findSceneTreeNodeByName(name);
+    selectTreeControllerNodeById: {
+        value: function (id) {
+            var sceneNodeTree = this._findSceneTreeNodeById(id);
 
             if (sceneNodeTree) {
                 var path = sceneNodeTree.toParentPath();
@@ -226,7 +228,7 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
                 if (path) {
                     this._fulfillSceneTreeNodePath(path);
 
-                    var treeControllerNode = this._findTreeControllerNodeByName(name);
+                    var treeControllerNode = this._findTreeControllerNodeById(id);
 
                     this._expandTreeControllerNode(treeControllerNode.parent);
                     this.rangeController.select(treeControllerNode);
