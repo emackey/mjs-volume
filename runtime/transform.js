@@ -240,10 +240,9 @@ var Transform = exports.Transform = Object.create(Base, {
                 this.translation = description.translation ? vec3.create(description.translation) : vec3.createFrom(0,0,0);
                 
                 if (description.rotation) {
-                    this.rotation = vec4.create(description.rotation);
+                    this.orientation = quat4.fromAngleAxis(description.rotation[3], vec3.createFrom(description.rotation[0],description.rotation[1],description.rotation[2]))
                 } else if (description.orientation) {
-                    var orientation = description.orientation;
-                    this.orientation = quat4.fromAngleAxis(orientation[3], vec3.createFrom(orientation[0],orientation[1],orientation[2]))
+                    this.orientation = quat4.create(description.orientation);
                 }
 
                 this.scale = description.scale ? vec3.create(description.scale) : vec3.createFrom(1,1,1);
