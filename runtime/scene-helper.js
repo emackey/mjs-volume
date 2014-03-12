@@ -34,6 +34,8 @@ var Utilities = require("runtime/utilities").Utilities;
 var Projection = require("runtime/projection").Projection;
 var Camera = require("runtime/camera").Camera;
 var BBox = require("runtime/utilities").BBox;
+var Set = require("collections/set");
+var Material = require("runtime/material").Material;
 
 var SceneHelper = exports.SceneHelper = Object.create(Object.prototype, {
 
@@ -106,6 +108,37 @@ var SceneHelper = exports.SceneHelper = Object.create(Object.prototype, {
             m3dNode.id = cameraNode.baseId;
             return m3dNode;
         }
-    }
+    },
+
+    getMaterialsFromNode: {
+        value: function(node) {
+            var glTFNode = node.glTFElement;
+            var materials = new Set();
+            var scene = node.scene;
+
+            if (glTFNode.meshes != null) {
+                glTFNode.meshes.forEach( function(mesh) {
+                    if (mesh.primitives) {
+                        mesh.primitives.forEach( function(primitive) {
+                            var glTFMaterial = primitive.material;
+                            var material;                            
+                            if (glTFMaterial.component3D == null) {
+                                material = Montage.create(Material);
+                                material.scene = scene;
+                                material.id = glTFMaterial.baseId;
+                                scene.glTFElement.ids[glTFMaterial.baseId] = material;
+                                glTFMaterial.component3D = material;
+                            } else {
+                                material = glTFMaterial.component3D;
+                            }
+                            materials.add(material);
+                        }, this);
+                    }
+                }, this);
+            }
+            return materials;
+        }  
+    },
+
 
 });

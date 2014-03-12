@@ -42,6 +42,15 @@ exports.Scene = Target.specialize( {
 
     _glTFElement: { value: null, writable: true },
 
+    glTFElement: {
+        get: function() {
+            return this._glTFElement;
+        },
+        set: function(value) {
+            this._glTFElement = value;
+        }
+    },
+
     _rootNode: { value: null, writable: true },
 
     rootNode: {
