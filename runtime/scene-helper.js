@@ -140,5 +140,20 @@ var SceneHelper = exports.SceneHelper = Object.create(Object.prototype, {
         }  
     },
 
+    createNodeFromGlTFElementIfNeeded: {
+        value: function(glTFNode, scene) {
+            if (glTFNode.component3D != null)
+                return glTFNode.component3D;
+
+            var m3dNode = new Node();
+
+            scene.glTFElement.ids[glTFNode.baseId] = glTFNode;
+            m3dNode.scene = scene;
+            m3dNode.id = glTFNode.baseId;
+            glTFNode.component3D = m3dNode;
+
+            return m3dNode;
+        }
+    }
 
 });

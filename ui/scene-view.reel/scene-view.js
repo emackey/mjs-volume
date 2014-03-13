@@ -882,6 +882,12 @@ exports.SceneView = Component.specialize( {
 
             if (glTFElementID) {
                 glTFElement = this.scene.glTFElement.ids[glTFElementID];
+
+                if (this._eventType === this._TOUCH_DOWN) {
+                    var node = SceneHelper.createNodeFromGlTFElementIfNeeded(glTFElement, this.scene);
+                    Application.dispatchEventNamed("sceneNodeSelected", true, true, node);
+                }
+
             }
 
             //are we out of a move ?

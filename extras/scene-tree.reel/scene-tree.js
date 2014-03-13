@@ -93,7 +93,24 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
             if (firstime) {
                 this.addOwnPropertyChangeListener("selectedNode", this);
                 this.addPathChangeListener("scene.status", this, "handleStatusChange");
+                Application.addEventListener("sceneNodeSelected", this);
             }
+        }
+    },
+
+    exitDocument: {
+        value: function () {
+            this.removeOwnPropertyChangeListener("selectedNode", this);
+            this.removePathChangeListener("scene.status", this);
+            Application.removeEventListener("sceneNodeSelected", this);
+        }
+    },
+
+    handleSceneNodeSelected: {
+        value: function(event) {
+            this.needsDraw = true;
+            if (event.detail)
+                this.selectTreeControllerNodeById(event.detail.id);
         }
     },
 
