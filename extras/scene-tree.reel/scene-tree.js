@@ -109,8 +109,14 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
     handleSceneNodeSelected: {
         value: function(event) {
             this.needsDraw = true;
-            if (event.detail)
-                this.selectTreeControllerNodeById(event.detail.id);
+
+            var node = event.detail,
+                selected = this.selectedNode,
+                alreadySelected = selected && selected.content.glTFElement.baseId === node.id;
+
+            if (node && !alreadySelected) {
+                this.selectTreeControllerNodeById(node.id);
+            }
         }
     },
 
