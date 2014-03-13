@@ -208,8 +208,10 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
 
     _expandTreeControllerNode: {
         value: function (treeControllerNode) {
-            if (treeControllerNode && !treeControllerNode.expanded) {
-                treeControllerNode.expanded = true;
+            if (treeControllerNode) {
+                if (!treeControllerNode.expanded) {
+                    treeControllerNode.expanded = true;
+                }
 
                 this._expandTreeControllerNode(treeControllerNode.parent);
             }
