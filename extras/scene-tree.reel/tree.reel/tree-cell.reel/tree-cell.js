@@ -30,6 +30,10 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
         value: null
     },
 
+    id: {
+        value: null
+    },
+
     type: {
         value: null
     },
@@ -41,15 +45,22 @@ exports.TreeCell = Component.specialize(/** @lends TreeCell# */ {
     node: {
         set: function (iteration) {
             if (iteration && typeof iteration === "object" && iteration.content) {
-                iteration.expanded = iteration.content.root ? true : iteration.expanded;
+                var content = iteration.content,
+                    isRoot = content.root;
 
-                if (iteration.content.rawChildren) {
-                    this.hasChildren = Object.keys(iteration.content.rawChildren).length > 0;
+                if (isRoot) {
+                    iteration.expanded = true;
+                } else {
+                    this.id = content.glTFElement.baseId;
                 }
 
-                this.name = iteration.content.name;
+                if (content.rawChildren) {
+                    this.hasChildren = Object.keys(content.rawChildren).length > 0;
+                }
+
+                this.name = content.name;
                 this._node = iteration;
-                this.type = iteration.content.type;
+                this.type = content.type;
             }
         },
         get: function () {

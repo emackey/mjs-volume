@@ -28,7 +28,7 @@
                 "element": {"#": "label"}
             },
             "bindings": {
-                "value": {"<-": "@owner.name"}
+                "value": {"<-": "@owner.name || @owner.id"}
             }
         },
 
@@ -52,12 +52,12 @@
     </script>
 </head>
 <body>
-    <div data-montage-id="treeCell" class="TreeCell">
-        <div data-montage-id="rootCondition">
-            <input data-montage-id="expanded" class="TreeCell-toggle" type="checkbox" />
-            <span data-montage-id="label" class="TreeCell-label"></span>
-            <span data-montage-id="nodeType" class="TreeCell-type"></span>
-        </div>
+<div data-montage-id="treeCell" class="TreeCell">
+    <div data-montage-id="rootCondition">
+        <input data-montage-id="expanded" class="TreeCell-toggle" type="checkbox" />
+        <span data-montage-id="label" class="TreeCell-label"></span>
+        <span data-montage-id="nodeType" class="TreeCell-type"></span>
     </div>
+</div>
 </body>
 </html>
