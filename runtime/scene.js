@@ -42,6 +42,8 @@ exports.Scene = Target.specialize( {
 
     _glTFElement: { value: null, writable: true },
 
+    shouldBeHitTested: { value: false, writable: true },
+
     glTFElement: {
         get: function() {
             return this._glTFElement;

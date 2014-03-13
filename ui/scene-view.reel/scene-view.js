@@ -1243,7 +1243,7 @@ exports.SceneView = Component.specialize( {
                         }
                     }
 
-                    if (this._mousePosition) {
+                    if (this.scene.shouldBeHitTested && (this._mousePosition != null)) {
                         this.__renderOptions.picking = true;
                         this.__renderOptions.coords = this._mousePosition;
                         this.__renderOptions.delegate = this;

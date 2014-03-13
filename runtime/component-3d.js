@@ -189,9 +189,15 @@ exports.Component3D = Target.specialize( {
             var state = null;
 
             if (selectorName.indexOf(":active") !== -1) {
-                return "active"
+                if (this.scene) {
+                    this.scene.shouldBeHitTested = true;
+                }
+                return "active";
             } else if (selectorName.indexOf(":hover") !== -1) {
-                return "hover"
+                if (this.scene) {
+                    this.scene.shouldBeHitTested = true;
+                }
+                return "hover";
             } else if (selectorName.indexOf(":") !== -1) {
                 return  null;
             }
