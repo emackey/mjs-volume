@@ -61,6 +61,21 @@ exports.Component3D = Target.specialize( {
         }
     },
 
+    shouldPerformHitTest: { value: false },
+
+    addEventListener: {
+        value: function addEventListener(type, listener, useCapture) {
+            if (this.scene) {
+                if (this.shouldPerformHitHest) {
+                    this.scene.shouldBeHitTested = true;
+                }
+            }    
+            this.shouldPerformHitHest = true;
+
+            this.super(type, listener, useCapture);
+        }
+    },
+
     _glTFElement: { value : null, writable: true },
 
     glTFElement: {
@@ -143,6 +158,9 @@ exports.Component3D = Target.specialize( {
                         this.glTFElement.component3D = this;
 
                         this.classListDidChange();
+                        if (this.shouldPerformHitHest) {
+                            this.scene.shouldBeHitTested = true;
+                        }
                     }
                 }
             }
