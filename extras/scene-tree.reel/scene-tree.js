@@ -88,6 +88,10 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
         value: null
     },
 
+    _scrollToElement: {
+        value: null
+    },
+
     enterDocument: {
         value: function (firstime) {
             if (firstime) {
@@ -108,14 +112,13 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
 
     handleSceneNodeSelected: {
         value: function(event) {
-            this.needsDraw = true;
-
             var node = event.detail,
                 selected = this.selectedNode,
                 alreadySelected = selected && selected.content.glTFElement.baseId === node.id;
 
             if (node && !alreadySelected) {
                 this.selectTreeControllerNodeById(node.id);
+                this.needsDraw = true;
             }
         }
     },
@@ -160,8 +163,23 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
     handleSelectedNodeChange: {
         value: function (selectedNode) {
             if (selectedNode && selectedNode.content && selectedNode.content.glTFElement) {
-                var component3D = this._getComponent3DFromGlTFElement(selectedNode.content.glTFElement);
-                Application.dispatchEventNamed("sceneNodeSelected", true, true, component3D);
+                var selectedIteration = null,
+                    iterations = this.templateObjects.tree.templateObjects.treeList.iterations;
+
+                for (var i = 0, length = iterations.length; (!selectedIteration && i < length); i++) {
+                    var iteration = iterations[i];
+
+                    if (selectedNode === iteration.object) {
+                        selectedIteration = iteration;
+                    }
+                }
+
+                if (selectedIteration) {
+                    this._scrollToElement = selectedIteration.firstElement;
+
+                    var component3D = this._getComponent3DFromGlTFElement(selectedNode.content.glTFElement);
+                    Application.dispatchEventNamed("sceneNodeSelected", true, true, component3D);
+                }
             }
         }
     },
@@ -258,6 +276,14 @@ exports.SceneTree = Component.specialize(/** @lends SceneGraphTree# */ {
                     this._expandTreeControllerNode(treeControllerNode.parent);
                     this.rangeController.select(treeControllerNode);
                 }
+            }
+        }
+    },
+
+    draw: {
+        value: function () {
+            if (this._scrollToElement && this._scrollToElement.classList.contains('selected')) {
+                this._scrollToElement.scrollIntoViewIfNeeded();
             }
         }
     }
