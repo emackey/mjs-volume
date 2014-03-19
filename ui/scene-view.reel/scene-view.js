@@ -642,12 +642,11 @@ exports.SceneView = Component.specialize( {
     enterDocument: {
         value: function(firstTime) {
             window.addEventListener("resize", this, true);
-            //we want to have the style set, we know it is here at this point,
-            //so we set size accordingly
-            this.captureResize();
-
+            //HACK: terrible work-around for demo.
             var self = this;
 
+            setTimeout( function() { self.captureResize();} , 500);
+            
             if (this.scene) {
                 this.scene.dispatchEventNamed("enteredDocument", true, false, this);
                 this.scene.loadCSSStyles();
@@ -1079,7 +1078,7 @@ exports.SceneView = Component.specialize( {
             return this._width;
         },
         set: function(value) {
-            if (value != this._width) {
+            if (value * this.scaleFactor != this._width) {
                 this._width = value * this.scaleFactor;
                 this.needsDraw = true;
             }
@@ -1095,7 +1094,7 @@ exports.SceneView = Component.specialize( {
             return this._height;
         },
         set: function(value) {
-            if (value != this._height) {
+            if (value * this.scaleFactor != this._height) {
                 this._height = value * this.scaleFactor;
                 this.needsDraw = true;
             }
