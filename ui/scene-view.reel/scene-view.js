@@ -642,6 +642,10 @@ exports.SceneView = Component.specialize( {
     enterDocument: {
         value: function(firstTime) {
             window.addEventListener("resize", this, true);
+            //we want to have the style set, we know it is here at this point,
+            //so we set size accordingly
+            this.captureResize();
+
             var self = this;
 
             if (this.scene) {
