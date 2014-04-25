@@ -161,9 +161,6 @@ exports.Scene = Target.specialize( {
 
     _loadScene: {
         value: function() {
-            if (this._ownerDocumentPart == null)
-                return;            
-
             var self = this;
             var readerDelegate = {};
             readerDelegate.loadCompleted = function (scene) {
