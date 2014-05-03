@@ -204,8 +204,6 @@ exports.Scene = Target.specialize( {
             if (value) {
                 if (value.indexOf(".json") === -1)
                     return;
-                var self = this;
-                var URLObject = URL.parse(value);
             }
 
             if (value !== this._path) {
@@ -213,7 +211,8 @@ exports.Scene = Target.specialize( {
                 if (value == null) {
                     this.scene = null;
                 } else {
-                    if (this._ownerDocumentPart == null) {
+                    var isAbsolute  = (value.length > 0) &&  value[0] === '/';
+                    if ((isAbsolute == false) && this._ownerDocumentPart == null) {
                         //FIXME:we should queue
                         if (this._pendingLoading == false) {
                             this.addPathChangeListener("_ownerDocumentPart", this, "_loadScene");
