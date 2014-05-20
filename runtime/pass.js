@@ -467,9 +467,10 @@ var ScenePassRenderer = Object.create(Object.prototype, {
             if (this.__skinnedNodes == null) {
                 this.__skinnedNodes = [];
             }
+            this.__skinnedNodes.length = 0;
             this.scene.rootNode.nodesWithPropertyNamed("instanceSkin", this.__skinnedNodes);
 
-            for (idx = 0 ; idx < this._primitivesPerPass.length ; idx++) {
+            for (idx = 0 ; idx < this.__skinnedNodes.length ; idx++) {
                 var skinnedNode = this.__skinnedNodes[idx];
                 skinnedNode.instanceSkin.skin.process(skinnedNode, webGLRenderer.resourceManager);
             }
