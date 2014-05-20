@@ -553,6 +553,21 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
         }
     },
 
+    nodesWithPropertyNamed: {
+        value: function( propertyName, nodes) {
+            if (this[propertyName] != null) {
+                nodes.push(this);                
+            }
+
+            if (this.children) {
+                for (var i = 0 ; i < this.children.length ; i++) {
+                    var node = this.children[i];
+                    node.nodesWithPropertyNamed(propertyName, nodes);
+                }
+            }
+        }
+    },
+
     _target: { value:null , writable:true },
 
     target: {
