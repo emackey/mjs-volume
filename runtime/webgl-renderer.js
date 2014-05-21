@@ -608,9 +608,19 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
 
     renderPrimitive: {
         value: function(primitiveDescription, pass, time, parameters) {
+            
             var renderVertices = false;
             var value = null;
             var primitive = primitiveDescription.primitive;
+
+            //temporary fix 
+            if (primitiveDescription.node) {
+                if (primitiveDescription.node.instanceSkin) {
+                    primitiveDescription.node.instanceSkin.skin.process(primitiveDescription.node, this.resourceManager);
+                }
+            }
+
+
             var newMaxEnabledArray = -1;
             var gl = this.webGLContext;
             var program =  this.bindedProgram;
