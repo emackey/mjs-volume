@@ -464,17 +464,19 @@ var ScenePassRenderer = Object.create(Object.prototype, {
                 webGLRenderer.bindRenderTarget(this.pickingRenderTarget);
             }
 
+            /*
             if (this.__skinnedNodes == null) {
                 this.__skinnedNodes = [];
             }
             this.__skinnedNodes.length = 0;
+            
             this.scene.rootNode.nodesWithPropertyNamed("instanceSkin", this.__skinnedNodes);
 
             for (idx = 0 ; idx < this.__skinnedNodes.length ; idx++) {
                 var skinnedNode = this.__skinnedNodes[idx];
                 skinnedNode.instanceSkin.skin.process(skinnedNode, webGLRenderer.resourceManager);
             }
-
+*/
             //set projection matrix
             webGLRenderer.projectionMatrix = this.viewPoint.cameras[0].projection.matrix;
 
