@@ -133,6 +133,8 @@ exports.Projection = Object.create(Base, {
             var matrix = this.matrix;
             if (matrix) {
                 if (this.yfov) {
+                    var degToRadians  = 3.14159265359 / 360.0;
+                    this._scaleX = 1./Math.tan(this.yfov * degToRadians * value);
                     matrix[0] = this._scaleX / value ;
                 } else if (this.xfov) {
                     matrix[5] = this._scaleY * value ;
