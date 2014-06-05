@@ -33,6 +33,8 @@ var TransformHelper = exports.TransformHelper = Object.create(Object.prototype, 
 
     _worldViewInverseTransposeMatrix: { value: null, writable: true },
 
+    _worldViewInverseMatrix: { value: null, writable: true },
+
     _dirty: { value: true, writable: true },
 
     _id: { value: 0, writable: true },
@@ -93,6 +95,7 @@ var TransformHelper = exports.TransformHelper = Object.create(Object.prototype, 
                 mat4.multiply(this._viewMatrix, this._node.worldMatrix, this._worldViewMatrix);
                 mat4.toInverseMat3(this._worldViewMatrix, this._worldViewInverseTransposeMatrix);
                 mat3.transpose(this._worldViewInverseTransposeMatrix);
+                mat4.inverse(this._worldViewMatrix, this._worldViewInverseMatrix);
                 this._dirty = false;
             }
         }
@@ -116,11 +119,21 @@ var TransformHelper = exports.TransformHelper = Object.create(Object.prototype, 
         }
     },
 
+   worldViewInverseMatrix: {
+        get: function() {
+            if (this._dirty) { //add this non-strictly necessary test to potentially prevent a function call
+                this.updateMatricesIfNeeded();
+            }
+            return this._worldViewInverseMatrix;
+        }
+    },
+
     init: {
         value: function() {
             this._viewMatrix = mat4.identity();
             this._worldViewMatrix = mat4.identity();
             this._worldViewInverseTransposeMatrix = mat3.identity();
+            this._worldViewInverseMatrix = mat4.identity();
             return this;
         }
     }

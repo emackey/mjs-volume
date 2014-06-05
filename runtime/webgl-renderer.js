@@ -637,19 +637,26 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
                 parameter = parameters[parameter];
                 if (parameter) {
                     if (parameter.semantic != null) {
+                        var nodeWrapper = primitiveDescription.nodeWrapper;
+                        if (parameter.source) {
+                            nodeWrapper = primitiveDescription.nodeWrapper.scenePassRenderer._nodeWrappers[parameter.source.id]
+                        }
+
                         var semantic = parameter.semantic;
                         if (semantic === this.PROJECTION) {
                             value = this.projectionMatrix;
                         } else if (semantic === this.MODELVIEW) {
-                            value = primitiveDescription.nodeWrapper.worldViewMatrix;
+                            value = nodeWrapper.worldViewMatrix;
                         } else if (semantic === this.MODELVIEWINVERSETRANSPOSE) {
-                            value = primitiveDescription.nodeWrapper.worldViewInverseTransposeMatrix;
+                            value = nodeWrapper.worldViewInverseTransposeMatrix;
+                        } else if (semantic === this.MODELVIEWINVERSE) {
+                            value = nodeWrapper.worldViewInverseMatrix;
                         }
                     }
                 }
 
                 if ((value == null) && parameter != null) {
-                    if (parameter.source) {
+                    if ((parameter.source) && (semantic == null)) {
                         var nodeWrapper = primitiveDescription.nodeWrapper.scenePassRenderer._nodeWrappers[parameter.source.id];
                         value = nodeWrapper.worldViewMatrix;
                     } else {
