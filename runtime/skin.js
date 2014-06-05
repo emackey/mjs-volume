@@ -67,8 +67,7 @@ exports.Skin = Object.create(Object.prototype, {
 
     process: {
         value: function(node, resourceManager) {
-            var skeletons = Object.keys(this.nodesForSkeleton);
-
+            var skeletons = node.instanceSkin.skeletons;
             var objectSpace = mat4.create();
             mat4.inverse(node.worldMatrix, objectSpace);
 
