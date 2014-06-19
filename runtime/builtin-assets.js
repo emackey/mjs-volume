@@ -32,6 +32,7 @@ exports.BuiltInAssets = Object.create(Object.prototype, {
 
     registerBuiltinAssetsIfNeeded: {
         value: function() {
+            return;
             var pickingLocation = require.location + "assets/picking/picking.json";
             var gradientLocation = require.location + "assets/gradient/gradient.json";
 

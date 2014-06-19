@@ -512,13 +512,13 @@ exports.WebGLTFResourceManager = Object.create(Object, {
         value: function(request, delegate) {
             var self = this;
             var type;
-            var path = request.path;
+            var uri = request.uri;
             if (request.kind === "multi-parts") {
                 type = request.requests[0].type;
-                path = request.requests[0].path;
+                uri = request.requests[0].uri;
             } else {
                 type = request.type;
-                path = request.path;
+                uri = request.uri;
             }
 
             if (!type) {
@@ -526,13 +526,13 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                 return;
             }
 
-            if (!path) {
+            if (!uri) {
                 delegate.handleError(WebGLTFResourceManager.INVALID_PATH);
                 return;
             }
 
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', path, true);
+            xhr.open('GET', uri, true);
             xhr.responseType = type;
 
             if (request.range) {
@@ -635,7 +635,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
             var resourceStatus = this._resourcesStatus[request.id];
             var node = null;
             var status = null;
-            var requestTree = this.requestTrees ? this.requestTrees[request.path] : null;
+            var requestTree = this.requestTrees ? this.requestTrees[request.uri] : null;
             if (resourceStatus) {
                 if (resourceStatus.status === "loading" )
                     return;
@@ -657,7 +657,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                     if (!requestTree) {
                         var rootTreeNode = Object.create(RequestTreeNode);
                         rootTreeNode.content = contRequests;
-                        this._requestTrees[request.path] = rootTreeNode;
+                        this._requestTrees[request.uri] = rootTreeNode;
                         requestTree = rootTreeNode;
                         trNode = rootTreeNode;
                     } else {
@@ -700,10 +700,10 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                 self.fireResourceAvailable.call(self, req_.id);
 
                 if (self._resourcesBeingProcessedCount < self.maxConcurrentRequests) {
-                    var requestTree  = resourceManager.requestTrees ? resourceManager.requestTrees[req_.path] : null;
+                    var requestTree  = resourceManager.requestTrees ? resourceManager.requestTrees[req_.uri] : null;
                     if (!self._processNextResource(requestTree)) {
                         if (requestTree) {
-                            delete resourceManager.requestTrees[req_.path];
+                            delete resourceManager.requestTrees[req_.uri];
                         }
                     }
                 }
@@ -768,7 +768,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                     "id" : wrappedBufferView.id,
                     "range" : range,
                     "type" : requestType,
-                    "path" : buffer.description.path,
+                    "uri" : buffer.description.uri,
                     "delegate" : delegate,
                     "ctx" : ctx,
                     "kind" : "single-part"
@@ -823,7 +823,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                         var bufferRequest = {
                             "id" : buffer.id,
                             "type" : requestType,
-                            "path" : buffer.description.path,
+                            "uri" : buffer.description.uri,
                             "delegate" : delegate,
                             "ctx" : ctx,
                             "kind" : "single-part" };
@@ -905,7 +905,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
         value: function(shader, delegate, ctx) {
             this._handleRequest({   "id":shader.id,
                 "type" : "text",
-                "path" : shader.description.path,
+                "uri" : shader.description.uri,
                 "delegate" : delegate,
                 "ctx" : ctx,
                 "kind" : "single-part" }, null);
@@ -924,7 +924,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
             this._resourcesStatus[resource.id] = { status: "loading" };
             var self = this;
 
-            if (resource.description.path) {
+            if (resource.description.uri) {
                 this._resourcesBeingProcessedCount++;
                 var videoElement = document.createElement('video');
                 videoElement.preload = "auto";
@@ -937,7 +937,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                     textureLoadedCallback(videoElement, resource.id, ctx);
                 });
 
-                videoElement.src = resource.description.path;
+                videoElement.src = resource.description.uri;
             }
 
         }
@@ -955,7 +955,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
             this._resourcesStatus[resource.id] = { status: "loading" };
             var self = this;
 
-            if (resource.description.path) {
+            if (resource.description.uri) {
                 this._resourcesBeingProcessedCount++;
                 var imageObject = new Image();
                 imageObject.onload = function() {
@@ -965,7 +965,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                     self._storeResource(resource.id, imageObject);
                     textureLoadedCallback(imageObject, resource.id, ctx, index);
                 }
-                imageObject.src = resource.description.path;
+                imageObject.src = resource.description.uri;
             } else if (resource.description.image) {
                 textureLoadedCallback(resource.description.image, resource.id, ctx, index);
             }

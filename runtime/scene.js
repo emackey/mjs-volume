@@ -220,7 +220,7 @@ exports.Scene = Target.specialize( {
         set: function(value) {
             //Work-around until montage implements textfield that do not send continous input..
             if (value) {
-                if (value.indexOf(".json") === -1)
+                if ((value.indexOf(".gltf") === -1) && (value.indexOf(".json") === -1))
                     return;
             }
 

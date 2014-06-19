@@ -82,8 +82,8 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
 
     handleImage: {
         value: function(entryID, description, userInfo) {
-            var imagePath = description.path;
-            var imageResource = Object.create(ResourceDescription).init(imagePath, { "path": imagePath });
+            var imageURI = description.uri;
+            var imageResource = Object.create(ResourceDescription).init(imageURI, { "uri": imageURI });
             imageResource.type = "image";
             this.storeEntry(entryID, imageResource, description);
             return true;
@@ -92,8 +92,8 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
 
     handleVideo: {
         value: function(entryID, description, userInfo) {
-            var videoPath = description.path;
-            var videoResource = Object.create(ResourceDescription).init(videoPath, { "path": videoPath });
+            var videoURI = description.uri;
+            var videoResource = Object.create(ResourceDescription).init(videoURI, { "uri": videoURI });
             videoResource.type = "video";
             this.storeEntry(entryID, videoResource, description);
             return true;
