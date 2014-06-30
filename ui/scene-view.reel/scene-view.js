@@ -646,8 +646,6 @@ exports.SceneView = Component.specialize( {
             window.addEventListener("resize", this, true);
             //HACK: terrible work-around for demo.
             var self = this;
-
-            setTimeout( function() { self.captureResize();} , 500);
             
             if (this.scene) {
                 this.scene.dispatchEventNamed("enteredDocument", true, false, this);
@@ -1076,31 +1074,23 @@ exports.SceneView = Component.specialize( {
 
     width: {
         get: function() {
-            if (this._width == null) {
-                var computedStyle = window.getComputedStyle(this.element, null);
-                return parseInt(computedStyle["width"]) * this.scaleFactor;
-            }
             return this._width;
         },
         set: function(value) {
-            if (value * this.scaleFactor != this._width) {
-                this._width = value * this.scaleFactor;
+            if (value != this._width) {
+                this._width = value;
                 this.needsDraw = true;
-            }
+            }          
         }
     },
 
     height: {
         get: function() {
-            if (this._height == null) {
-                var computedStyle = window.getComputedStyle(this.element, null);
-                return parseInt(computedStyle["height"]) * this.scaleFactor;
-            }
             return this._height;
         },
         set: function(value) {
-            if (value * this.scaleFactor != this._height) {
-                this._height = value * this.scaleFactor;
+            if (value != this._height) {
+                this._height = value;
                 this.needsDraw = true;
             }
         }
@@ -1149,7 +1139,6 @@ exports.SceneView = Component.specialize( {
                 }
             }
 
-
             if ((this.allowsProgressiveSceneLoading === false) && (this._sceneResourcesLoaded === false)) {
                 return;
             }
@@ -1162,12 +1151,9 @@ exports.SceneView = Component.specialize( {
 
             //as indicated here: http://www.khronos.org/webgl/wiki/HandlingHighDPI
             //set draw buffer and canvas size
+            this.captureResize();
             if ((width != this.canvas.width) || (height != this.canvas.height)) {
-                this.canvas.style.width = (width / this.scaleFactor) + "px";
-                this.canvas.style.height = (height / this.scaleFactor) + "px";
-                this.canvas.width = width;
-                this.canvas.height = height;
-                webGLContext.viewport(0, 0, width, height);
+                webGLContext.viewport(0, 0, webGLContext.canvas.width, webGLContext.canvas.height);
             }
 
             var viewPoint = this.viewPoint;
@@ -1305,15 +1291,15 @@ exports.SceneView = Component.specialize( {
 
     captureResize: {
         value: function(evt) {
-            this.needsDraw = true;
-
-            var w = this.element.offsetWidth;
-            var h = this.element.offsetHeight;
-
-            this.width = w;
-            this.height = h;
-            this.needsDraw = true;
-
+            var gl = this.getWebGLContext();
+            if (gl == null)
+                return;
+            var width = Math.round(gl.canvas.clientWidth * this.scaleFactor);
+            var height = Math.round(gl.canvas.clientHeight * this.scaleFactor);
+            if (gl.canvas.width != width || gl.canvas.height != height) {
+                gl.canvas.width = width;
+                gl.canvas.height = height;
+            }
         }
     },
 
