@@ -1056,7 +1056,7 @@ var WebGLRenderer = exports.WebGLRenderer = Object.create(Object.prototype, {
     },
 
     renderPrimitivesWithPass: {
-        value: function(primitives, pass, parameters, time) {
+        value: function(primitives, pass, parameters, time, pickingMode) {
             var count = primitives.length;
             var gl = this.webGLContext;
             if (pass.instanceProgram) {
@@ -1084,27 +1084,29 @@ var WebGLRenderer = exports.WebGLRenderer = Object.create(Object.prototype, {
                             if (primitive.node.hidden)
                                 continue;
                             if (!primitive.pickingColor) {
-                                /*
-                                var nodeID = primitive.node.baseId; //FIXME
-                                if (nodeID) {
-                                    //FIXME move this into the picking technique when we have it..
-                                    //for picking, we need to associate a color to each node.
-                                    var nodePickingColor = pass.extras.nodeIDToColor[nodeID];
-                                    if (!nodePickingColor) {
-                                        nodePickingColor = vec4.createFrom(Math.random(),Math.random(),Math.random(), 1.);
-                                        pass.extras.nodeIDToColor[nodeID] = nodePickingColor;
+                                
+                                if (pickingMode === "node") {
+                                    var nodeID = primitive.node.baseId; //FIXME
+                                    if (nodeID) {
+                                        //FIXME move this into the picking technique when we have it..
+                                        //for picking, we need to associate a color to each node.
+                                        var nodePickingColor = pass.extras.nodeIDToColor[nodeID];
+                                        if (!nodePickingColor) {
+                                            nodePickingColor = vec4.createFrom(Math.random(),Math.random(),Math.random(), 1.);
+                                            pass.extras.nodeIDToColor[nodeID] = nodePickingColor;
+                                        }
+                                        primitive.pickingColor = nodePickingColor;
                                     }
-                                    primitive.pickingColor = nodePickingColor;
-                                }*/
-
-                                var materialID = primitive.primitive.material.baseId; //FIXME
-                                if (materialID) {
-                                    var materialPickingColor = pass.extras.materialIDToColor[materialID];
-                                    if (!materialPickingColor) {
-                                        materialPickingColor = vec4.createFrom(Math.random(),Math.random(),Math.random(), 1.);
-                                        pass.extras.materialIDToColor[materialID] = materialPickingColor;
+                                } else if (pickingMode === "material") {
+                                    var materialID = primitive.primitive.material.baseId; //FIXME
+                                    if (materialID) {
+                                        var materialPickingColor = pass.extras.materialIDToColor[materialID];
+                                        if (!materialPickingColor) {
+                                            materialPickingColor = vec4.createFrom(Math.random(),Math.random(),Math.random(), 1.);
+                                            pass.extras.materialIDToColor[materialID] = materialPickingColor;
+                                        }
+                                        primitive.pickingColor = materialPickingColor;
                                     }
-                                    primitive.pickingColor = materialPickingColor;
                                 }
                             }
                             this.bindedProgram.setValueForSymbol("u_pickingColor", primitive.pickingColor);

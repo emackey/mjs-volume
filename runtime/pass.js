@@ -487,9 +487,9 @@ var ScenePassRenderer = Object.create(Object.prototype, {
                     this.__nonOpaquePassesWithPrimitives.push(passWithPrimitives);
                 } else {
                     if (picking && this.pickingTechnique) {
-                        webGLRenderer.renderPrimitivesWithPass(passWithPrimitives.primitives, pass, this.pickingTechnique.parameters, time);
+                        webGLRenderer.renderPrimitivesWithPass(passWithPrimitives.primitives, pass, this.pickingTechnique.parameters, time, options.pickingMode);
                     } else {
-                        webGLRenderer.renderPrimitivesWithPass(passWithPrimitives.primitives, pass, null, time);
+                        webGLRenderer.renderPrimitivesWithPass(passWithPrimitives.primitives, pass, null, time, options.pickingMode);
                     }
                 }
             }
