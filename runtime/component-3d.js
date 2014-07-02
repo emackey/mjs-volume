@@ -66,7 +66,12 @@ exports.Component3D = Target.specialize( {
     addEventListener: {
         value: function addEventListener(type, listener, useCapture) {
             if (this.scene) {
-                this.scene.shouldBeHitTested = true;
+                var className = Montage.getInfoForObject(this).objectName;
+                if (className == "Node") {
+                    this.scene.nodesShouldBeHitTested = true;
+                } else if (className == "Material") {
+                    this.scene.materialsShouldBeHitTested = true;
+                }
             }    
             this.shouldPerformHitHest = true;
 

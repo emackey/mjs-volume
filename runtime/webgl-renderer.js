@@ -1084,6 +1084,7 @@ var WebGLRenderer = exports.WebGLRenderer = Object.create(Object.prototype, {
                             if (primitive.node.hidden)
                                 continue;
                             if (!primitive.pickingColor) {
+                                /*
                                 var nodeID = primitive.node.baseId; //FIXME
                                 if (nodeID) {
                                     //FIXME move this into the picking technique when we have it..
@@ -1094,6 +1095,16 @@ var WebGLRenderer = exports.WebGLRenderer = Object.create(Object.prototype, {
                                         pass.extras.nodeIDToColor[nodeID] = nodePickingColor;
                                     }
                                     primitive.pickingColor = nodePickingColor;
+                                }*/
+
+                                var materialID = primitive.primitive.material.baseId; //FIXME
+                                if (materialID) {
+                                    var materialPickingColor = pass.extras.materialIDToColor[materialID];
+                                    if (!materialPickingColor) {
+                                        materialPickingColor = vec4.createFrom(Math.random(),Math.random(),Math.random(), 1.);
+                                        pass.extras.materialIDToColor[materialID] = materialPickingColor;
+                                    }
+                                    primitive.pickingColor = materialPickingColor;
                                 }
                             }
                             this.bindedProgram.setValueForSymbol("u_pickingColor", primitive.pickingColor);

@@ -32,6 +32,7 @@ exports.Material = Component3D.specialize( {
             this.super();
 
             this.addRangeAtPathChangeListener("filterColor", this, "handleFilterColorChange");
+            this.addRangeAtPathChangeListener("emission", this, "handleEmissionChange");
             this.addOwnPropertyChangeListener("glTFElement", this);
             this.addOwnPropertyChangeListener("image", this);
             this.addOwnPropertyChangeListener("opacity", this);
@@ -40,11 +41,14 @@ exports.Material = Component3D.specialize( {
 
     filterColor: { value: [1,1,1,1]},
 
+    emission: { value: [0,0,0,0]},
+
     _originalOpacity: { value: 1, writable: true },
 
     handleGlTFElementChange: {
         value: function() {
             this.handleFilterColorChange();
+            this.handleEmissionChange();
             this.handleImageChange();
 
             this._originalOpacity = this._opacity;
@@ -78,6 +82,20 @@ exports.Material = Component3D.specialize( {
             }
         }
     },
+
+    handleEmissionChange: {
+        value: function(plus, minus, index) {
+            if (this.glTFElement != null) {
+                if (this.glTFElement.parameters["emission"]) {
+                    this.glTFElement.parameters["emission"].value = this.emission;
+                    if (this.scene) {
+                        this.scene.dispatchEventNamed("materialUpdate", true, false, this);
+                    }
+                }
+            }
+        }
+    },
+
 
     handleOpacityChange: {
         value: function() {

@@ -156,6 +156,23 @@ var SceneHelper = exports.SceneHelper = Object.create(Object.prototype, {
         }
     },
 
+    createMaterialFromGlTFElementIfNeeded: {
+        value: function(glTFMaterial, scene) {
+            if (glTFMaterial.component3D != null)
+                return glTFMaterial.component3D;
+
+            var m3dMaterial = new Material();
+
+            scene.glTFElement.ids[glTFMaterial.baseId] = glTFMaterial;
+            m3dMaterial.scene = scene;
+            m3dMaterial.id = glTFMaterial.baseId;
+            glTFMaterial.component3D = m3dMaterial;
+
+            return m3dMaterial;
+        }
+    },
+
+
     getGLTFCamera: {
         value: function(node) {
             var glTFCamera = null;

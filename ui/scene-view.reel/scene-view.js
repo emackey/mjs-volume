@@ -310,7 +310,7 @@ exports.SceneView = Component.specialize( {
 
             if (this.delegate) {
                 if (this.delegate.sceneWillChange) {
-                    this.delegate.sceneWillChange();
+                    this.delegate.sceneWillChange(value);
                 }
             }
 
@@ -861,16 +861,14 @@ exports.SceneView = Component.specialize( {
 
     _eventType: { value: -1, writable: true },
 
-    _previousEventType: { value: -1, writable: true },
+    _previousNodeEventType: { value: -1, writable: true },
 
-    _lastHandledComponent: { value: null, writable: true },
-
-    _previousHandledComponent: { value: null, writable: true },
+    _previousHandledNode: { value: null, writable: true },
 
     handleSelectedNode: {
         value: function(glTFElementID) {
             var glTFElement = null,
-                previousGlTFElement = this._previousHandledComponent,
+                previousGlTFElement = this._previousHandledNode,
                 previousHandledComponent3D = previousGlTFElement ? previousGlTFElement.component3D : null;
 
             if (this._eventType === this._TOUCH_UP) {
@@ -892,7 +890,7 @@ exports.SceneView = Component.specialize( {
             }
 
             //are we out of a move ?
-            if (previousGlTFElement && previousHandledComponent3D && this._previousEventType === this._TOUCH_MOVE &&
+            if (previousGlTFElement && previousHandledComponent3D && this._previousNodeEventType === this._TOUCH_MOVE &&
                 glTFElement !== previousGlTFElement) {
                 previousHandledComponent3D.handleActionOnGlTFElement(previousGlTFElement, Component3D._EXIT);
             }
@@ -908,10 +906,61 @@ exports.SceneView = Component.specialize( {
                 this._eventType = -1;
             }
 
-            this._previousHandledComponent = glTFElement;
-            this._previousEventType = this._eventType;
+            this._previousHandledNode = glTFElement;
+            this._previousNodeEventType = this._eventType;
         }
     },
+
+    _previousMaterialEventType: { value: -1, writable: true },
+
+    _previousHandledMaterial: { value: null, writable: true },
+
+    handleSelectedMaterial: {
+        value: function(glTFElementID) {
+            var glTFElement = null,
+                previousGlTFElement = this._previousHandledMaterial,
+                previousHandledComponent3D = previousGlTFElement ? previousGlTFElement.component3D : null;
+
+            if (this._eventType === this._TOUCH_UP) {
+                if (previousGlTFElement && previousHandledComponent3D) {
+                    previousHandledComponent3D.handleActionOnGlTFElement(previousGlTFElement, Component3D._TOUCH_UP);
+                }
+
+                this._eventType = -1;
+            }
+
+            if (glTFElementID) {
+                glTFElement = this.scene.glTFElement.ids[glTFElementID];
+
+                if (this._eventType === this._TOUCH_DOWN) {
+                    var material = SceneHelper.createMaterialFromGlTFElementIfNeeded(glTFElement, this.scene);
+                    Application.dispatchEventNamed("sceneMaterialSelected", true, true, material);
+                }
+
+            }
+
+            //are we out of a move ?
+            if (previousGlTFElement && previousHandledComponent3D && this._previousMaterialEventType === this._TOUCH_MOVE &&
+                glTFElement !== previousGlTFElement) {
+                previousHandledComponent3D.handleActionOnGlTFElement(previousGlTFElement, Component3D._EXIT);
+            }
+
+            if (this._eventType === this._TOUCH_MOVE && glTFElement !== previousGlTFElement) {
+                if (glTFElement) {
+                    this.actionDispatcher.dispatchActionOnGlTFElement(Component3D._ENTER, glTFElement);
+                } else {
+                    this._eventType = -1;
+                }
+            } else if (glTFElement && this._eventType === this._TOUCH_DOWN) {
+                this.actionDispatcher.dispatchActionOnGlTFElement(Component3D._TOUCH_DOWN, glTFElement);
+                this._eventType = -1;
+            }
+
+            this._previousHandledMaterial = glTFElement;
+            this._previousNodeEventType = this._eventType;
+        }
+    },
+
 
     move: {
         value: function (event) {
@@ -1243,16 +1292,27 @@ exports.SceneView = Component.specialize( {
                         }
                     }
 
-                    if (this.scene.shouldBeHitTested && (this._mousePosition != null)) {
-                        this.__renderOptions.picking = true;
-                        this.__renderOptions.coords = this._mousePosition;
-                        this.__renderOptions.delegate = this;
-                        this.sceneRenderer.render(time, this.__renderOptions);
+                    if (this._mousePosition != null) {
+                        if (this.scene.nodesShouldBeHitTested) {
+                            this.__renderOptions.picking = true;
+                            this.__renderOptions.coords = this._mousePosition;
+                            this.__renderOptions.delegate = this;
+                            this.__renderOptions.pickingMode = "node";
+                            this.sceneRenderer.render(time, this.__renderOptions);
+                        } 
+                        if (this.scene.materialsShouldBeHitTested) {
+                            this.__renderOptions.picking = true;
+                            this.__renderOptions.coords = this._mousePosition;
+                            this.__renderOptions.delegate = this;
+                            this.__renderOptions.pickingMode = "material";
+                            this.sceneRenderer.render(time, this.__renderOptions);
+                        }
                     }
 
                     this.__renderOptions.picking = false;
                     this.__renderOptions.coords = null;
                     this.__renderOptions.delegate = null;
+                    this.__renderOptions.pickingMode = null;
 
                     this.sceneRenderer.render(time, this.__renderOptions);
 
