@@ -1121,27 +1121,31 @@ exports.SceneView = Component.specialize( {
 
     width: {
         get: function() {
+            if (this._width != null)
+                return this._width;
             var gl = this.getWebGLContext();
-
             return gl != null ? gl.canvas.clientWidth : 0;
         },
         set: function(value) {
-            var gl = this.getWebGLContext();
-            gl.canvas.style.width = value + "px";
-            this.needsDraw = true;
+            if (this._width != value) {
+                this._width = value;
+                this.needsDraw = true;
+            }
         }
     },
 
     height: {
         get: function() {
+            if (this._height != null)
+                return this._height;
             var gl = this.getWebGLContext();
-
             return gl != null ? gl.canvas.clientHeight : 0;
         },
         set: function(value) {
-            var gl = this.getWebGLContext();
-            gl.canvas.style.height = value + "px";
-            this.needsDraw = true;
+            if (this._height != value) {
+                this._height = value;
+                this.needsDraw = true;
+            }
         }
     },
 
@@ -1196,11 +1200,7 @@ exports.SceneView = Component.specialize( {
                 return;
 
 
-            //as indicated here: http://www.khronos.org/webgl/wiki/HandlingHighDPI
-            //set draw buffer and canvas size
-            this.captureResize();
-            var width = webGLContext.canvas.width;
-            var height = webGLContext.canvas.height;
+            this.resizeIfNeeded();
             var viewPoint = this.viewPoint;
             var self = this;
             var time = Date.now();
@@ -1223,7 +1223,7 @@ exports.SceneView = Component.specialize( {
 
                 if (viewPoint.glTFElement) {
                     var glTFCamera = SceneHelper.getGLTFCamera(viewPoint);
-                    glTFCamera.projection.aspectRatio =  width / height;
+                    glTFCamera.projection.aspectRatio =  this.width / this.height;
 
                     this._internalViewPoint.transform.matrix = viewPoint.glTFElement.worldMatrix;
                     if (this._internalViewPoint.cameras != null) {
@@ -1345,16 +1345,18 @@ exports.SceneView = Component.specialize( {
         }
     },
 
-    captureResize: {
+    resizeIfNeeded: {
         value: function(evt) {
             var gl = this.getWebGLContext();
             if (gl == null)
                 return;
-            var width = Math.round(gl.canvas.clientWidth * this.scaleFactor);
-            var height = Math.round(gl.canvas.clientHeight * this.scaleFactor);
+            var width = this.width * this.scaleFactor;
+            var height = this.height * this.scaleFactor;
             if (gl.canvas.width != width || gl.canvas.height != height) {
                 gl.canvas.width = width;
                 gl.canvas.height = height;
+                this.element.style.width = this.width + "px";;
+                this.element.style.height = this.height + "px";;
                 gl.viewport(0, 0, width, height);
             }
         }
