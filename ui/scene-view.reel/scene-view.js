@@ -643,8 +643,6 @@ exports.SceneView = Component.specialize( {
 
     enterDocument: {
         value: function(firstTime) {
-            window.addEventListener("resize", this, true);
-            //HACK: terrible work-around for demo.
             var self = this;
             
             if (this.scene) {
@@ -918,7 +916,7 @@ exports.SceneView = Component.specialize( {
     move: {
         value: function (event) {
             var position = this.getRelativePositionToCanvas(event);
-            this._mousePosition = [position.x * this.scaleFactor,  this.height - (position.y * this.scaleFactor)];
+            this._mousePosition = [position.x * this.scaleFactor,  (this.height * this.scaleFactor)- (position.y * this.scaleFactor)];
             this._eventType = this._TOUCH_MOVE;
             this.needsDraw = true;
         }
@@ -929,7 +927,7 @@ exports.SceneView = Component.specialize( {
             event.preventDefault();
             this._consideringPointerForPicking = true;
             var position = this.getRelativePositionToCanvas(event);
-            this._mousePosition = [position.x * this.scaleFactor,  this.height - (position.y * this.scaleFactor)];
+            this._mousePosition = [position.x * this.scaleFactor,  (this.height * this.scaleFactor) - (position.y * this.scaleFactor)];
 
             if (this._state === this.PLAY) {
                 this.pause();
@@ -1074,25 +1072,27 @@ exports.SceneView = Component.specialize( {
 
     width: {
         get: function() {
-            return this._width;
+            var gl = this.getWebGLContext();
+
+            return gl != null ? gl.canvas.clientWidth : 0;
         },
         set: function(value) {
-            if (value != this._width) {
-                this._width = value;
-                this.needsDraw = true;
-            }          
+            var gl = this.getWebGLContext();
+            gl.canvas.style.width = value + "px";
+            this.needsDraw = true;
         }
     },
 
     height: {
         get: function() {
-            return this._height;
+            var gl = this.getWebGLContext();
+
+            return gl != null ? gl.canvas.clientHeight : 0;
         },
         set: function(value) {
-            if (value != this._height) {
-                this._height = value;
-                this.needsDraw = true;
-            }
+            var gl = this.getWebGLContext();
+            gl.canvas.style.height = value + "px";
+            this.needsDraw = true;
         }
     },
 
@@ -1146,16 +1146,12 @@ exports.SceneView = Component.specialize( {
             if (this._scene == null || this.viewPoint == null || this._disableRendering)
                 return;
 
-            var width = this.width;
-            var height = this.height;
 
             //as indicated here: http://www.khronos.org/webgl/wiki/HandlingHighDPI
             //set draw buffer and canvas size
             this.captureResize();
-            if ((width != this.canvas.width) || (height != this.canvas.height)) {
-                webGLContext.viewport(0, 0, webGLContext.canvas.width, webGLContext.canvas.height);
-            }
-
+            var width = webGLContext.canvas.width;
+            var height = webGLContext.canvas.height;
             var viewPoint = this.viewPoint;
             var self = this;
             var time = Date.now();
@@ -1299,6 +1295,7 @@ exports.SceneView = Component.specialize( {
             if (gl.canvas.width != width || gl.canvas.height != height) {
                 gl.canvas.width = width;
                 gl.canvas.height = height;
+                gl.viewport(0, 0, width, height);
             }
         }
     },
