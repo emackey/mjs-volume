@@ -318,7 +318,7 @@ exports.SceneView = Component.specialize( {
                 this._scene.removeEventListener("cursorUpdate", this);
                 this._scene.removeEventListener("materialUpdate", this);
                 this._scene.removeEventListener("textureUpdate", this);
-                Application.removeEventListener("sceneNodeSelected", this);
+                this.application.removeEventListener("sceneNodeSelected", this);
             }
         }
     },
@@ -331,7 +331,7 @@ exports.SceneView = Component.specialize( {
                 this._scene.addEventListener("cursorUpdate", this);
                 this._scene.addEventListener("textureUpdate", this);
                 this._scene.addEventListener("materialUpdate", this);
-                Application.addEventListener("sceneNodeSelected", this);
+                this.application.addEventListener("sceneNodeSelected", this);
                 this.applyScene();
                 if (this.delegate) {
                     if (this.delegate.sceneDidChange) {
@@ -884,7 +884,7 @@ exports.SceneView = Component.specialize( {
 
                 if (this._eventType === this._TOUCH_DOWN) {
                     var node = SceneHelper.createNodeFromGlTFElementIfNeeded(glTFElement, this.scene);
-                    Application.dispatchEventNamed("sceneNodeSelected", true, true, node);
+                    this.application.dispatchEventNamed("sceneNodeSelected", true, true, node);
                 }
 
             }
@@ -934,7 +934,7 @@ exports.SceneView = Component.specialize( {
 
                 if (this._eventType === this._TOUCH_DOWN) {
                     var material = SceneHelper.createMaterialFromGlTFElementIfNeeded(glTFElement, this.scene);
-                    Application.dispatchEventNamed("sceneMaterialSelected", true, true, material);
+                    this.application.dispatchEventNamed("sceneMaterialSelected", true, true, material);
                 }
 
             }
