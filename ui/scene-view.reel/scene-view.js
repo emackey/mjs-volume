@@ -1355,8 +1355,10 @@ exports.SceneView = Component.specialize( {
             if (gl.canvas.width != width || gl.canvas.height != height) {
                 gl.canvas.width = width;
                 gl.canvas.height = height;
-                this.element.style.width = this.width + "px";;
-                this.element.style.height = this.height + "px";;
+                if (this._width != null)
+                    this.element.style.width = this.width + "px";;
+                if (this._height != null)
+                    this.element.style.height = this.height + "px";;
                 gl.viewport(0, 0, width, height);
             }
         }
