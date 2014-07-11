@@ -641,10 +641,17 @@ exports.SceneView = Component.specialize( {
         }
     },
 
+    captureResize: {
+        value: function() {
+            this.needsDraw = true;
+        }
+    },
+
     enterDocument: {
         value: function(firstTime) {
             var self = this;
-            
+            window.addEventListener("resize", this, true);
+
             if (this.scene) {
                 this.scene.dispatchEventNamed("enteredDocument", true, false, this);
                 this.scene.loadCSSStyles();
