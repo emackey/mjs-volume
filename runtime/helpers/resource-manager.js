@@ -719,27 +719,40 @@ exports.WebGLTFResourceManager = Object.create(Object, {
     },
 
 
-    _elementSizeForGLType: {
-        value: function(glType) {
-            switch (glType) {
+    _elementSizeForTypeAndComponentType: {
+        value: function(type, componentType) {
+            var size = 0;
+            switch (componentType) {
                 case WebGLRenderingContext.FLOAT :
-                    return Float32Array.BYTES_PER_ELEMENT;
+                    size = Float32Array.BYTES_PER_ELEMENT;
+                    break;
                 case WebGLRenderingContext.UNSIGNED_BYTE:
-                    return Uint8Array.BYTES_PER_ELEMENT;
+                    size = Uint8Array.BYTES_PER_ELEMENT;
+                    break;
                 case WebGLRenderingContext.UNSIGNED_SHORT:
-                    return Uint16Array.BYTES_PER_ELEMENT;
-                case WebGLRenderingContext.FLOAT_VEC2:
-                    return Float32Array.BYTES_PER_ELEMENT * 2;
-                case WebGLRenderingContext.FLOAT_VEC3:
-                    return Float32Array.BYTES_PER_ELEMENT * 3;
-                case WebGLRenderingContext.FLOAT_VEC4:
-                    return Float32Array.BYTES_PER_ELEMENT * 4;
-                case WebGLRenderingContext.FLOAT_MAT4:
-                    return Float32Array.BYTES_PER_ELEMENT * 16;
-                case WebGLRenderingContext.FLOAT_MAT3:
-                    return Float32Array.BYTES_PER_ELEMENT * 9;
+                    size = Uint16Array.BYTES_PER_ELEMENT;
+                    break;
                 default:
-                    return null;
+                    debugger;
+                    return 0;
+            }
+            switch (type) {
+                case "SCALAR":
+                    return size;
+                case "VEC2":
+                    return 2 * size;
+                case "VEC3":
+                    return 3  * size;
+                case "VEC4":
+                case "MAT2":
+                    return 4 * size;
+                case "MAT3":
+                    return 9 * size;
+                case "MAT4":
+                    return 16 * size;
+                default:
+                    debugger;
+                    return 0;
             }
         }
     },
@@ -757,7 +770,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
             if (bufferView) {
                 var buffer = bufferView.buffer;
                 var byteOffset = wrappedBufferView.byteOffset + bufferView.description.byteOffset;
-                var range = [byteOffset , (this._elementSizeForGLType(wrappedBufferView.type) * wrappedBufferView.count) + byteOffset];
+                var range = [byteOffset , (this._elementSizeForTypeAndComponentType(wrappedBufferView.type, wrappedBufferView.componentType) * wrappedBufferView.count) + byteOffset];
                 if (buffer.description) {
                     if (buffer.description.type)
                         requestType = buffer.description.type;

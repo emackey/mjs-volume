@@ -354,34 +354,22 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
     vertexAttributeBufferDelegate: {
         value: {
 
-            _componentTypeForGLType: function(gl, glType) {
-                switch (glType) {
-                    case gl.FLOAT:
-                    case gl.FLOAT_VEC2:
-                    case gl.FLOAT_VEC3:
-                    case gl.FLOAT_VEC4:
-                        return gl.FLOAT;
-                    case gl.UNSIGNED_BYTE:
-                        return gl.UNSIGNED_BYTE;
-                    case gl.UNSIGNED_SHORT:
-                        return gl.UNSIGNED_SHORT;
-                    default:
-                        return null;
-                }
-            },
-
-            _componentsPerElementForGLType: function(gl, glType) {
-                switch (glType) {
-                    case gl.FLOAT:
-                    case gl.UNSIGNED_BYTE:
-                    case gl.UNSIGNED_SHORT:
+            //only performed once per vertexAttribute
+            _componentsPerElementForType: function(type) {
+                switch (type) {
+                    case "SCALAR":
                         return 1;
-                    case gl.FLOAT_VEC2:
+                    case "VEC2":
                         return 2;
-                    case gl.FLOAT_VEC3:
+                    case "VEC3":
                         return 3;
-                    case gl.FLOAT_VEC4:
+                    case "VEC4":
+                    case "MAT2":
                         return 4;
+                    case "MAT3":
+                        return 9;
+                    case "MAT4":
+                        return 16;
                     default:
                         return null;
                 }
@@ -404,8 +392,8 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
                 gl.bindBuffer(gl.ARRAY_BUFFER, glResource);
                 //FIXME: use bufferSubData to prevent alloc
                 gl.bufferData(gl.ARRAY_BUFFER, resource, gl.STATIC_DRAW);
-                glResource.componentType = this._componentTypeForGLType(gl, attribute.type);
-                glResource.componentsPerAttribute = this._componentsPerElementForGLType(gl, attribute.type);
+                glResource.componentType = attribute.componentType;
+                glResource.componentsPerAttribute = this._componentsPerElementForType(attribute.type);
                 gl.bindBuffer(gl.ARRAY_BUFFER, previousBuffer);
                 return glResource;
             },
