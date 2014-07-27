@@ -555,22 +555,29 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
                 parameterDescription = this.getEntry(parameterUID).entry;
                 //we can avoid code below if we add byteStride
                 switch (parameterDescription.type) {
-                    case WebGLRenderingContext.FLOAT_VEC4:
-                        componentsPerAttribute = 4;
-                        break;
-                    case WebGLRenderingContext.FLOAT_VEC3:
-                        componentsPerAttribute = 3;
-                        break;
-                    case WebGLRenderingContext.FLOAT_VEC2:
-                        componentsPerAttribute = 2;
-                        break;
-                    case WebGLRenderingContext.FLOAT:
+                    case "SCALAR":
                         componentsPerAttribute = 1;
                         break;
-                    default: {
-                        console.log("type:"+parameterDescription.type+" byteStride not handled");
+                    case "VEC2":
+                        componentsPerAttribute = 2;
                         break;
-                    }
+                    case "VEC3":
+                        componentsPerAttribute = 3;
+                        break;
+                    case "VEC4":
+                    case "MAT2":
+                        componentsPerAttribute = 4;
+                        break;
+                    case "MAT3":
+                        componentsPerAttribute = 9;
+                        break;
+                    case "MAT4":
+                        componentsPerAttribute = 16;
+                        break;
+                    default:
+                        componentsPerAttribute = 0;
+                        console.log("handleAnimation - unknown type:" + parameterDescription.type);
+                        break;
                 }
 
                 if (parameterDescription.extensions) {
