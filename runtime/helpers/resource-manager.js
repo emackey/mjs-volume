@@ -733,7 +733,6 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                     size = Uint16Array.BYTES_PER_ELEMENT;
                     break;
                 default:
-                    debugger;
                     return 0;
             }
             switch (type) {
@@ -751,7 +750,6 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                 case "MAT4":
                     return 16 * size;
                 default:
-                    debugger;
                     return 0;
             }
         }
@@ -1066,10 +1064,6 @@ exports.WebGLTFResourceManager = Object.create(Object, {
     //just used a hack now to setup resources coming from compressed meshes
     setResource: {
         value: function(resourceID, resource) {
-            if (this._resources[resourceID]) {
-                debugger;
-            }
-
             this._resources[resourceID] = resource;
         }
     },
