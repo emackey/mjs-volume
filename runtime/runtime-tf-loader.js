@@ -269,24 +269,16 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
                         var attributeID = attributes[semantic];
                         var attributeEntry = this.getEntry(attributeID);
 
-                        //if (!isCompressedMesh) {
-                            primitive.addVertexAttribute( { "semantic" :  semantic,
+                            primitive.addVertexAttribute( { 
+                                "semantic" :  semantic,
                                 "attribute" : attributeEntry.entry });
-                        //} else {
-                        //    primitive.addVertexAttribute( { "semantic" :  semantic,
-                        //        "attribute" : attributeID });
-                        //}
 
                     }, this);
 
                     //set indices
                     var indicesID = primitiveDescription.indices;
                     var indicesEntry = this.getEntry(indicesID);
-                    //if (!isCompressedMesh) {
                         primitive.indices = indicesEntry.entry;
-                    //} else {
-                    //    primitive.indices = indicesID;
-                    //}
                 }
             }
             return true;
@@ -384,13 +376,13 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
                     }, this);
 
                     var meshSources = [];
-                    node.instanceSkin.sources.forEach(function(source) {
+                    node.instanceSkin.meshes.forEach(function(source) {
                         var sourceEntry = this.getEntry(source);
                         if (sourceEntry) {
                             meshSources.push(sourceEntry.entry);
                         }
                     }, this);
-                    skin.sources = meshSources;
+                    skin.meshes = meshSources;
 
                 }
             }
@@ -449,7 +441,8 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
             skin.jointsIds = description.joints;
             skin.inverseBindMatricesDescription = description.inverseBindMatrices;
             skin.inverseBindMatricesDescription.id = entryID + "_inverseBindMatrices";
-            skin.inverseBindMatricesDescription.bufferView = this.getEntry(skin.inverseBindMatricesDescription.bufferView).entry;
+            var entry = this.getEntry(skin.inverseBindMatricesDescription).entry;
+            skin.inverseBindMatricesDescription = entry;
             this.storeEntry(entryID, skin, description);
         }
     },
@@ -461,7 +454,7 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
 
             var node = Object.create(glTFNode).init();
             node.id = entryID;
-            node.jointId = description.jointId;
+            node.joint= description.joint;
             node.name = description.name;
 
             this.storeEntry(entryID, node, description);
@@ -491,7 +484,7 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
             if (description.instanceSkin) {
                 description.instanceSkin.skin = this.getEntry(description.instanceSkin.skin).entry;
                 node.instanceSkin = description.instanceSkin;
-                var sources = node.instanceSkin.sources;
+                var sources = node.instanceSkin.meshes;
                 if (sources) {
                     sources.forEach( function(meshID) {
                         meshEntry = this.getEntry(meshID);

@@ -38,14 +38,14 @@ exports.Skin = Object.create(Object.prototype, {
 
     matricesForSkeleton:  { value: null, writable: true },
 
-    sources:  { value: null, writable: true },
+    meshes:  { value: null, writable: true },
 
     init: {
         value: function() {
             this.jointsIds = [];
             this.nodesForSkeleton = {};
             this.matricesForSkeleton = {};
-            this.sources = [];
+            this.meshes = [];
             return this;
         }
     },
@@ -85,7 +85,7 @@ exports.Skin = Object.create(Object.prototype, {
                 }
                 var inverseBindMatrices = resourceManager.getResource(this.inverseBindMatricesDescription, this.inverseBindMatricesDelegate);
                 if (inverseBindMatrices) {
-                    this.sources.forEach(function(source) {
+                    this.meshes.forEach(function(source) {
                         //FIXME: assume mesh here but it could be morph (later..)
                         var mesh = source;
 

@@ -391,7 +391,7 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
 
     _nodeWithJointID: {
         value: function( id) {
-            if (this.jointId === id)
+            if (this.joint === id)
                 return this;
 
             if (this.children) {
