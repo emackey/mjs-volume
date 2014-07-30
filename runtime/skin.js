@@ -28,7 +28,7 @@ var Utilities = require("runtime/utilities").Utilities;
 
 exports.Skin = Object.create(Object.prototype, {
 
-    jointsIds: { value: null, writable: true },
+    jointNames: { value: null, writable: true },
 
     nodesForSkeleton: { value: null, writable: true },
 
@@ -42,7 +42,7 @@ exports.Skin = Object.create(Object.prototype, {
 
     init: {
         value: function() {
-            this.jointsIds = [];
+            this.jointNames = [];
             this.nodesForSkeleton = {};
             this.matricesForSkeleton = {};
             this.meshes = [];
@@ -75,7 +75,7 @@ exports.Skin = Object.create(Object.prototype, {
                 var nodes = this.nodesForSkeleton[skeleton];
                 var matrices = this.matricesForSkeleton[skeleton];
                 if (!matrices) {
-                    var length = 16 * this.jointsIds.length;
+                    var length = 16 * this.jointNames.length;
                     matrices = new Float32Array(length);
                     this.matricesForSkeleton[skeleton] = matrices;
                     var identity = mat4.identity();
@@ -90,7 +90,7 @@ exports.Skin = Object.create(Object.prototype, {
                         var mesh = source;
 
                         var BSM = this.bindShapeMatrix;
-                        var jointsCount = this.jointsIds.length;
+                        var jointsCount = this.jointNames.length;
                         var IBM = mat4.create();
                         for (var i = 0; i < jointsCount ; i++) {
                             for (var j = 0; j < 16 ; j++) {

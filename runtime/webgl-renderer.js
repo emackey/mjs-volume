@@ -594,6 +594,49 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
         }
     },
 
+    _defaultGLStates: { value: null; },
+
+    _restoreDefaultGLStates: {
+        value: function(gl) {
+            if (this._defaultGLStates == null) {
+                this._defaultGLStates = {
+                    "disable" : [gl.BLEND, gl.CULL_FACE, gl.DEPTH_TEST, gl.POLYGON_OFFSET_FILL, gl.SAMPLE_ALPHA_TO_COVERAGE, gl.SCISSOR_TEST],
+                    "functions" : {
+                        "blendColor": [0.0, 0.0, 0.0, 0.0],
+                        "blendEquationSeparate" : [gl.FUNC_ADD, gl.FUNC_ADD],
+                        "blendFuncSeparate" : [gl.ONE, gl.ONE, gl.ZERO, gl.ZERO], 
+                        "colorMask" : [true, true, true, true], 
+                        "cullFace" : [gl.BACK],
+                        "depthFunc" : [gl.LESS],
+                        "depthMask" : [true],
+                        "depthRange" : [0.0, 1.0],
+                        "frontFace" : [gl.CCW],
+                        "lineWidth" : [1.0],
+                        "polygonOffset" : [0.0, 0.0], 
+                        "scissor" : [0, 0, 0, 0],
+                        "stencilMask" : ~0
+                    },
+                }
+                
+                var disabledStates = this._defaultGLStates.disable;
+                if (disabledStates != null) {
+                    var length = disabledStates.length;
+                    for (var i = 0; i < length; ++i) {
+                        gl.disable(disabledStates[i]);
+                    }
+                }
+
+                var functions = this._defaultGLStates.functions;
+                if (functions != null) {
+                    var func;
+                    for (func in functions) {
+                        gl[func].apply(gl, functions[func]);
+                    }
+                }
+            }
+        }
+    },
+
     renderPrimitive: {
         value: function(primitiveDescription, pass, time, parameters) {
             
@@ -607,7 +650,6 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
                     primitiveDescription.node.instanceSkin.skin.process(primitiveDescription.node, this.resourceManager);
                 }
             }
-
 
             var newMaxEnabledArray = -1;
             var gl = this.webGLContext;
@@ -914,47 +956,30 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
                     var depthMask = 1;
                     var cullFaceEnable = 1;
                     var states = pass.states;
-                    var blendEquation = gl.FUNC_ADD;
-                    var sfactor = gl.SRC_ALPHA;
-                    var dfactor = gl.ONE_MINUS_SRC_ALPHA;
                     var isPickingPass = (pass.id === "__PickingPass");
 
-                    //FIXME: make a clever handling of states, For now this is incomplete and inefficient.(but robust)
-                    if (states) {
-                        if (states.blendEnable != null) {
-                            blending = states.blendEnable;
+                    var length;
+                    var enabledStates = pass.enable;
+                    if (enabledStates != null) {
+                        length = enabledStates.length;
+                        for (i = 0; i < length; ++i) {
+                            gl.enable(enabledStates[i]);
                         }
-                        if (states.depthTestEnable != null) {
-                            depthTest = states.depthTestEnable;
-                        }
-                        if (states.depthMask != null) {
-                            depthMask = states.depthMask;
-                        }
-                        if (states.cullFaceEnable != null) {
-                            cullFaceEnable = states.cullFaceEnable;
-                        }
-                        if(states.blendEquation != null) {
-                            var blendFunc = states.blendFunc;
-                            if (blendFunc != null) {
-                                if (blendFunc.sfactor != null)
-                                    sfactor = blendFunc.sfactor;
-                                if (blendFunc.dfactor != null)
-                                    dfactor = blendFunc.dfactor;
+                    }
+
+                    var functions = states.functions;
+                    if (functions != null) {
+                        var func;
+                        for (func in functions) {
+                            if (functions.hasOwnProperty(func)) {
+                                gl[func].apply(gl, functions[func]);
                             }
                         }
                     }
 
-                    this.setState(gl.DEPTH_TEST, depthTest);
-                    this.setState(gl.CULL_FACE, cullFaceEnable);
-
+                    //FIXME
                     gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE);
 
-                    gl.depthMask(depthMask);
-                    this.setState(gl.BLEND, blending);
-                    if (blending === 1) {
-                        gl.blendEquation(blendEquation);
-                        gl.blendFunc(sfactor, dfactor);
-                    }
                     this.bindedProgram = glProgram;
 
                     if (isPickingPass) {

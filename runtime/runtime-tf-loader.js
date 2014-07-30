@@ -359,15 +359,15 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
                         var nodeEntry = this.getEntry(skeleton);
                         if (nodeEntry) {
                             var rootSkeleton = nodeEntry.entry;
-                            var jointsIds = skin.jointsIds;
+                            var jointNames = skin.jointNames;
                             var joints = [];
 
-                            jointsIds.forEach(function(jointId) {
-                                var joint = rootSkeleton.nodeWithJointID(jointId);
+                            jointNames.forEach(function(jointName) {
+                                var joint = rootSkeleton.nodeWithJointID(jointName);
                                 if (joint) {
                                     joints.push(joint);
                                 } else {
-                                    console.log("WARNING: jointId:"+jointId+" cannot be found in skeleton:"+skeleton);
+                                    console.log("WARNING: jointName:"+jointName+" cannot be found in skeleton:"+skeleton);
                                 }
                             }, this);
 
@@ -438,7 +438,7 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
         value: function(entryID, description, userInfo) {
             var skin = Object.create(Skin).init();
             skin.bindShapeMatrix = mat4.create(description.bindShapeMatrix);
-            skin.jointsIds = description.joints;
+            skin.jointNames = description.jointNames;
             skin.inverseBindMatricesDescription = description.inverseBindMatrices;
             skin.inverseBindMatricesDescription.id = entryID + "_inverseBindMatrices";
             var entry = this.getEntry(skin.inverseBindMatricesDescription).entry;
@@ -454,7 +454,7 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
 
             var node = Object.create(glTFNode).init();
             node.id = entryID;
-            node.joint= description.joint;
+            node.jointName = description.jointName;
             node.name = description.name;
 
             this.storeEntry(entryID, node, description);
