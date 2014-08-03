@@ -490,8 +490,13 @@ var ScenePassRenderer = Object.create(Object.prototype, {
                 var pass = picking ? this.pickingPass : passWithPrimitives.pass;
 
                 var states = pass.states;
+                var transparent = false;
+                if (states.enable) {
+                    transparent = states.enable.indexOf(WebGLRenderingContext.BLEND) != -1;
+                }
+
                 //we do not check hitTesting for non-opaque elements
-                if (states.blendEnable && !picking) {
+                if (transparent && !picking) {
                     this.__nonOpaquePassesWithPrimitives.push(passWithPrimitives);
                 } else {
                     if (picking && this.pickingTechnique) {
