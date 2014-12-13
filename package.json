@@ -8,7 +8,7 @@
         "q" : "0.9.6",
         "native": "~0.2.0",
         "collections": "~0.2.1",
-        "cssom" : "0.3.0",
+        "cssom" : "git+https://github.com/NV/CSSOM.git#gh-pages",
         "url" : "0.7.9"
     },
     "repository": {
