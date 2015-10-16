@@ -479,7 +479,7 @@ var ScenePassRenderer = Object.create(Object.prototype, {
                 var states = pass.states;
                 var transparent = false;
                 if (states.enable) {
-                    transparent = states.enable.indexOf(WebGLRenderingContext.BLEND) != -1;
+                    transparent = states.enable.indexOf(WebGLRenderingContext.prototype.BLEND) != -1;
                 }
 
                 //we do not check hitTesting for non-opaque elements

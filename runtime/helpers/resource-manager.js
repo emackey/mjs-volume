@@ -722,14 +722,15 @@ exports.WebGLTFResourceManager = Object.create(Object, {
     _elementSizeForTypeAndComponentType: {
         value: function(type, componentType) {
             var size = 0;
+            var GL = WebGLRenderingContext.prototype;
             switch (componentType) {
-                case WebGLRenderingContext.FLOAT :
+                case GL.FLOAT :
                     size = Float32Array.BYTES_PER_ELEMENT;
                     break;
-                case WebGLRenderingContext.UNSIGNED_BYTE:
+                case GL.UNSIGNED_BYTE:
                     size = Uint8Array.BYTES_PER_ELEMENT;
                     break;
-                case WebGLRenderingContext.UNSIGNED_SHORT:
+                case GL.UNSIGNED_SHORT:
                     size = Uint16Array.BYTES_PER_ELEMENT;
                     break;
                 default:

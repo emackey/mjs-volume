@@ -129,13 +129,14 @@ exports.Material = Component3D.specialize( {
 
     parameterForImagePath: {
         value: function(imagePath) {
+            var GL = WebGLRenderingContext.prototype;
 
             var sampler = {
-                "magFilter": WebGLRenderingContext.LINEAR,
-                "minFilter": WebGLRenderingContext.LINEAR,
+                "magFilter": GL.LINEAR,
+                "minFilter": GL.LINEAR,
                 "type": "sampler",
-                "wrapS" : WebGLRenderingContext.REPEAT,
-                "wrapT" : WebGLRenderingContext.REPEAT
+                "wrapS" : GL.REPEAT,
+                "wrapT" : GL.REPEAT
             };
 
             var source = {
@@ -150,12 +151,12 @@ exports.Material = Component3D.specialize( {
             var parameterValue = {
                 "baseId": "texture-" + imagePath,
                 "id": "texture-" + imagePath,
-                "format": WebGLRenderingContext.RGBA,
-                "internalFormat" : WebGLRenderingContext.RGBA,
+                "format": GL.RGBA,
+                "internalFormat" : GL.RGBA,
                 "sampler" : sampler,
                 "source" : source,
                 "type" : "texture",
-                "target" : WebGLRenderingContext.TEXTURE_2D
+                "target" : GL.TEXTURE_2D
             };
 
             var parameter = {
