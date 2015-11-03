@@ -483,36 +483,6 @@ exports.SceneView = Component.specialize( {
         }
     },
 
-    viewPoint: {
-        get: function() {
-            return this._viewPoint;
-        },
-        set: function(value) {
-            var id = this._viewPoint ? this._viewPoint.id : null;
-            var upcomingId = value ? value.id : null;
-            if (id != upcomingId) {
-                var previousViewPoint = null;
-                if (this._viewPoint && value) {
-                    if (this._viewPoint.scene == value.scene) {
-                        previousViewPoint = this._viewPoint;
-                    }
-                }
-                this.viewPointWillChange(previousViewPoint, value);
-                this._viewPoint = value;
-                var animationManager = this.getAnimationManager();
-                if (animationManager)
-                    animationManager.sceneTime = 0;
-
-                if (value) {
-                    if (this.scene && (this._viewPoint.scene == null)) {
-                        this._viewPoint.scene = this.scene;
-                    }
-                }
-                this.viewPointDidChange();
-            }
-        }
-    },
-
     canvas: {
         get: function() {
             if (this.templateObjects) {
