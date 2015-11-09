@@ -45,7 +45,7 @@
     "buffers": {
         "gradient.bin": {
             "byteLength": 60,
-            "path": "gradient.bin"
+            "uri": "gradient.bin"
         }
     },
     "cameras": {
@@ -112,10 +112,10 @@
     },
     "shaders": {
         "gradient0FS": {
-            "path": "gradient0FS.glsl"
+            "uri": "gradient0FS.glsl"
         },
         "gradient0VS": {
-            "path": "gradient0VS.glsl"
+            "uri": "gradient0VS.glsl"
         }
     },
     "techniques": {
