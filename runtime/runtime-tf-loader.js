@@ -168,8 +168,8 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
                         parameter.value = values[parameterSid];
                         var paramValue = null;
                         switch (parameter.type) {
-                            case WebGLRenderingContext.SAMPLER_CUBE:
-                            case WebGLRenderingContext.SAMPLER_2D:
+                            case WebGLRenderingContext.prototype.SAMPLER_CUBE:
+                            case WebGLRenderingContext.prototype.SAMPLER_2D:
                             {
                                 var entry = this.getEntry(parameter.value);
                                 if (entry) {
@@ -253,7 +253,7 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
             for (var i = 0 ; i < primitivesDescription.length ; i++) {
                 var primitiveDescription = primitivesDescription[i];
 
-                if (primitiveDescription.primitive === WebGLRenderingContext.TRIANGLES) {
+                if (primitiveDescription.primitive === WebGLRenderingContext.prototype.TRIANGLES) {
                     var primitive = Object.create(Primitive).init();
 
                     //read material

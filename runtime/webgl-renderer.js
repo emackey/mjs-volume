@@ -28,6 +28,8 @@ require("runtime/dependencies/gl-matrix");
 var GLSLProgram = require("runtime/glsl-program").GLSLProgram;
 var WebGLTFResourceManager = require("runtime/helpers/resource-manager").WebGLTFResourceManager;
 
+var GL = WebGLRenderingContext.prototype;
+
 var WebGLRendererHelper = Object.create(Object.prototype, {
 
     _statesFunctionsIndex: { value: null, writable: true },
@@ -38,21 +40,21 @@ var WebGLRendererHelper = Object.create(Object.prototype, {
     defaultFunctionsArgs: { 
         value: {
             "blendColor": [0.0, 0.0, 0.0, 0.0],
-            "blendEquationSeparate" : [WebGLRenderingContext.FUNC_ADD, WebGLRenderingContext.FUNC_ADD],
-            "blendFuncSeparate" : [WebGLRenderingContext.ONE, WebGLRenderingContext.ONE, WebGLRenderingContext.ZERO, WebGLRenderingContext.ZERO], 
+            "blendEquationSeparate" : [GL.FUNC_ADD, GL.FUNC_ADD],
+            "blendFuncSeparate" : [GL.ONE, GL.ONE, GL.ZERO, GL.ZERO],
             "colorMask" : [true, true, true, true], 
-            "cullFace" : [WebGLRenderingContext.BACK],
-            "depthFunc" : [WebGLRenderingContext.LESS],
+            "cullFace" : [GL.BACK],
+            "depthFunc" : [GL.LESS],
             "depthMask" : [true],
             "depthRange" : [0.0, 1.0],
-            "frontFace" : [WebGLRenderingContext.CCW],
+            "frontFace" : [GL.CCW],
             "lineWidth" : [1.0],
             "polygonOffset" : [0.0, 0.0], 
             "scissor" : [0, 0, 0, 0]
         }, writable : false
     },
 
-    allEnablableStates: { value: [WebGLRenderingContext.BLEND, WebGLRenderingContext.CULL_FACE, WebGLRenderingContext.DEPTH_TEST, WebGLRenderingContext.POLYGON_OFFSET_FILL, WebGLRenderingContext.SAMPLE_ALPHA_TO_COVERAGE, WebGLRenderingContext.SCISSOR_TEST], writable: false },
+    allEnablableStates: { value: [GL.BLEND, GL.CULL_FACE, GL.DEPTH_TEST, GL.POLYGON_OFFSET_FILL, GL.SAMPLE_ALPHA_TO_COVERAGE, GL.SCISSOR_TEST], writable: false },
 
     statesFunctionsIndex: { 
         get: function() {
@@ -468,11 +470,11 @@ var WebGLRenderer = exports.WebGLRenderer = Object.create(Object.prototype, {
     textureDelegate: {
         value: {
             getGLFilter: function(filter) {
-                return filter == null ? WebGLRenderingContext.LINEAR : filter;
+                return filter == null ? GL.LINEAR : filter;
             },
 
             getGLWrapMode: function(wrapMode) {
-                return wrapMode == null ? WebGLRenderingContext.REPEAT : wrapMode;
+                return wrapMode == null ? GL.REPEAT : wrapMode;
             },
 
             handleError: function(errorCode, info) {
