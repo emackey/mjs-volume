@@ -683,10 +683,38 @@ exports.SceneView = Component.specialize( {
             }, false);
 
             this.element.addEventListener('gesturestart', function (event) {
+                if ((self.allowsViewPointControl == true) && (self.scene != null)) {
+                    if (self.scene.rootNode) {
+                        self.cameraController.node = self.scene.rootNode;
+                        self.cameraController.zoomStart(event);
+                        self.needsDraw = true;
+                    }
+                }
+                event.stopPropagation();
+                event.preventDefault();
+            }, false);
+
+            this.element.addEventListener('gestureend', function (event) {
+                if ((self.allowsViewPointControl == true) && (self.scene != null)) {
+                    if (self.scene.rootNode) {
+                        self.cameraController.node = self.scene.rootNode;
+                        self.cameraController.zoomEnd(event);
+                        self.needsDraw = true;
+                    }
+                }
+                event.stopPropagation();
                 event.preventDefault();
             }, false);
 
             this.element.addEventListener('gesturechange', function (event) {
+                if ((self.allowsViewPointControl == true) && (self.scene != null)) {
+                    if (self.scene.rootNode) {
+                        self.cameraController.node = self.scene.rootNode;
+                        self.cameraController.zoom(event);
+                        self.needsDraw = true;
+                    }
+                }
+                event.stopPropagation();
                 event.preventDefault();
             }, false);
 
