@@ -986,6 +986,8 @@ exports.Component3D = Target.specialize( {
         value: function (glTFElement, action) {
             var state = this.__STYLE_DEFAULT__;
 
+            var actionEvent;
+
             switch (action) {
                 case this._ENTER:
                     state = "hover";
@@ -1002,15 +1004,26 @@ exports.Component3D = Target.specialize( {
 
                 case this._TOUCH_DOWN:
                     state = "active";
-                    var actionEvent = document.createEvent("CustomEvent");
+                    actionEvent = document.createEvent("CustomEvent");
                     actionEvent.initCustomEvent("action", true, true, {
-                        glTFElement: glTFElement
+                        glTFElement: glTFElement,
+                        action: "touchDown"
                     });
                     this.dispatchEvent(actionEvent);
                     break;
 
                 case this._TOUCH_UP:
                     state = this.__STYLE_DEFAULT__; //this is probably wrong - what happens if hover is on going too ?
+                    var className = Montage.getInfoForObject(this).objectName;
+                    if (className === "Material") {
+                        actionEvent = document.createEvent("CustomEvent");
+                        actionEvent.initCustomEvent("action", true, true, {
+                            glTFElement: glTFElement,
+                            action: "touchUp"
+                        });
+                        this.dispatchEvent(actionEvent);
+                    }
+
                     break;
             }
 
