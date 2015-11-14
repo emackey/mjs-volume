@@ -37,9 +37,42 @@ exports.CameraController = Montage.specialize( {
         }
     },
 
+    _scaleFactor: { value: .6 },
+
+    scaleFromEvent: {
+        value: function(event) {
+            return event.scale * this._scaleFactor;
+        }
+    },
+
     _deltaForEvent: {
         value: function(event) {
-            return event.wheelDeltaY != null ? event.wheelDeltaY : -event.deltaY;
+            if (event.type == "wheel") {
+                return event.wheelDeltaY != null ? event.wheelDeltaY : -event.deltaY;
+            } else {
+                var scale = - (this._lastScale - this.scaleFromEvent(event));
+
+                var direction = vec3.create();
+                var eye = vec3.create(this.viewPoint.glTFElement.transform.translation);
+
+                var targetPosition;
+                var rootNode = this.node.glTFElement;
+                var sceneBBox =  this.sceneBBox;
+                targetPosition = [
+                    (sceneBBox[0][0] + sceneBBox[1][0]) / 2,
+                    (sceneBBox[0][1] + sceneBBox[1][1]) / 2,
+                    (sceneBBox[0][2] + sceneBBox[1][2]) / 2];
+
+                var distVec = vec3.create();
+
+                distVec[0] = targetPosition[0] - eye[0];
+                distVec[1] = targetPosition[1] - eye[1];
+                distVec[2] = targetPosition[2] - eye[2];
+                var distance = vec3.length(distVec);
+
+                return scale * distance * 7500;
+            }
+
         }
     },
 
@@ -129,6 +162,22 @@ exports.CameraController = Montage.specialize( {
 
     _axisUp: { value: null, writable: true },
 
+    _lastScale: { value: 0 },
+
+    zoomStart: {
+        value: function(event) {
+            if (event.type != "wheel") {
+                this._lastScale = this.scaleFromEvent(event);
+            }
+        }
+    },
+
+    zoomEnd: {
+        value: function() {
+            this._lastScale = 0;
+        }
+    },
+
     zoom: {
         value: function(event) {
             if (this.moving)
@@ -177,6 +226,8 @@ exports.CameraController = Montage.specialize( {
 
                 this.viewPoint.glTFElement.transform.translation = eye;
             }
+
+            this._lastScale = this.scaleFromEvent(event);
         }
     },
 

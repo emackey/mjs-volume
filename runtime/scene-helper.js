@@ -158,6 +158,8 @@ var SceneHelper = exports.SceneHelper = Object.create(Object.prototype, {
 
     createMaterialFromGlTFElementIfNeeded: {
         value: function(glTFMaterial, scene) {
+            if (glTFMaterial == null)
+                return null;
             if (glTFMaterial.component3D != null)
                 return glTFMaterial.component3D;
 

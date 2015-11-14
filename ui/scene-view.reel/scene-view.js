@@ -683,10 +683,38 @@ exports.SceneView = Component.specialize( {
             }, false);
 
             this.element.addEventListener('gesturestart', function (event) {
+                if ((self.allowsViewPointControl == true) && (self.scene != null)) {
+                    if (self.scene.rootNode) {
+                        self.cameraController.node = self.scene.rootNode;
+                        self.cameraController.zoomStart(event);
+                        self.needsDraw = true;
+                    }
+                }
+                event.stopPropagation();
+                event.preventDefault();
+            }, false);
+
+            this.element.addEventListener('gestureend', function (event) {
+                if ((self.allowsViewPointControl == true) && (self.scene != null)) {
+                    if (self.scene.rootNode) {
+                        self.cameraController.node = self.scene.rootNode;
+                        self.cameraController.zoomEnd(event);
+                        self.needsDraw = true;
+                    }
+                }
+                event.stopPropagation();
                 event.preventDefault();
             }, false);
 
             this.element.addEventListener('gesturechange', function (event) {
+                if ((self.allowsViewPointControl == true) && (self.scene != null)) {
+                    if (self.scene.rootNode) {
+                        self.cameraController.node = self.scene.rootNode;
+                        self.cameraController.zoom(event);
+                        self.needsDraw = true;
+                    }
+                }
+                event.stopPropagation();
                 event.preventDefault();
             }, false);
 
@@ -709,6 +737,7 @@ exports.SceneView = Component.specialize( {
                         self.cameraController.beginTranslate(event);
                     }
                 }
+                self.needsDraw = true;
             }, false);
 
             composer.addEventListener('translateEnd', function (event) {
@@ -718,6 +747,7 @@ exports.SceneView = Component.specialize( {
                         self.cameraController.endTranslate(event);
                     }
                 }
+                self.needsDraw = true;
             }, false);
 
             this.addComposerForElement(composer, this.canvas);
@@ -762,20 +792,7 @@ exports.SceneView = Component.specialize( {
                 console.log("WARNING: anti-aliasing is not supported/enabled")
             }
 
-            //check from http://davidwalsh.name/detect-ipad
-            if (navigator) {
-                // For use within normal web clients
-                var isiPad = navigator.userAgent.match(/iPad/i) != null;
-                if (isiPad == false) {
-                    // For use within iPad developer UIWebView
-                    // Thanks to Andrew Hedges!
-                    var ua = navigator.userAgent;
-                    isiPad = /iPad/i.test(ua) || /iPhone OS 3_1_2/i.test(ua) || /iPhone OS 3_2_2/i.test(ua);
-                }
-                if (isiPad) {
-                    this._shouldForceClear = true;
-                }
-            }
+            this._shouldForceClear = this._isiPad();
 
             var webGLRenderer = Object.create(WebGLRenderer).initWithWebGLContext(webGLContext);
             webGLContext.enable(webGLContext.DEPTH_TEST);
@@ -942,19 +959,25 @@ exports.SceneView = Component.specialize( {
                 previousGlTFElement = this._previousHandledMaterial,
                 previousHandledComponent3D = previousGlTFElement ? previousGlTFElement.component3D : null;
 
+            if (glTFElementID) {
+                glTFElement = this.scene.glTFElement.ids[glTFElementID];
+            }
+
             if (this._eventType === this._TOUCH_UP) {
                 if (previousGlTFElement && previousHandledComponent3D) {
                     previousHandledComponent3D.handleActionOnGlTFElement(previousGlTFElement, Component3D._TOUCH_UP);
                 }
 
+                if (glTFElement && glTFElement.component3D) {
+                    glTFElement.component3D.handleActionOnGlTFElement(previousGlTFElement, Component3D._TOUCH_UP);
+                }
+
                 this._eventType = -1;
             }
 
-            if (glTFElementID) {
-                glTFElement = this.scene.glTFElement.ids[glTFElementID];
-
-                if (this._eventType === this._TOUCH_DOWN) {
-                    var material = SceneHelper.createMaterialFromGlTFElementIfNeeded(glTFElement, this.scene);
+            if (this._eventType === this._TOUCH_DOWN) {
+                var material = SceneHelper.createMaterialFromGlTFElementIfNeeded(glTFElement, this.scene);
+                if (material) {
                     this.application.dispatchEventNamed("sceneMaterialSelected", true, true, material);
                 }
 
@@ -982,11 +1005,39 @@ exports.SceneView = Component.specialize( {
         }
     },
 
+    _moveStartPosition: {
+        value: null
+    },
+
+    _distance: {
+        value: function (start, end) {
+            var x = end[0] - start[0];
+            x = x * x;
+
+            var y = end[1] - start[1];
+            y = y * y;
+
+            return Math.sqrt(x + y);
+        }
+    },
+
+    moveThresholdDistance: {
+        value: 10
+    },
 
     move: {
         value: function (event) {
             var position = this.getRelativePositionToCanvas(event);
             this._mousePosition = [position.x * this.scaleFactor,  (this.height * this.scaleFactor)- (position.y * this.scaleFactor)];
+
+            var moveDistance;
+            if (this._moveStartPosition != null) {
+                moveDistance = this._distance(this._moveStartPosition, this._mousePosition);
+                if (moveDistance > this.moveThresholdDistance) {
+                    this._consideringPointerForPicking = false;
+                }
+            }
+
             this._eventType = this._TOUCH_MOVE;
             this.needsDraw = true;
         }
@@ -998,6 +1049,7 @@ exports.SceneView = Component.specialize( {
             this._consideringPointerForPicking = true;
             var position = this.getRelativePositionToCanvas(event);
             this._mousePosition = [position.x * this.scaleFactor,  (this.height * this.scaleFactor) - (position.y * this.scaleFactor)];
+            this._moveStartPosition = this._mousePosition;
 
             if (this._state === this.PLAY) {
                 this.pause();
@@ -1026,10 +1078,14 @@ exports.SceneView = Component.specialize( {
                 }
             }
 
-            this._consideringPointerForPicking = false;
             this._eventType = this._TOUCH_UP;
-            this.handleSelectedNode(null);
-            this._mousePosition = null;
+            if (this._consideringPointerForPicking) {
+                this._consideringPointerForPicking = false;
+                this.handleSelectedMaterial(this._previousHandledMaterial != null ? this._previousHandledMaterial.baseId : null);
+                this.handleSelectedNode(null);
+            }
+            this._moveStartPosition = this._mousePosition = null;
+
         }
     },
 
