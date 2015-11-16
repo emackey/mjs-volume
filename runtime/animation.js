@@ -178,7 +178,7 @@ var Channel = exports.Channel = Object.create(Base, {
                     timer.Tic();
                     decoder.DecodeHeader(dynamicVector, bstream);
                     timer.Toc();
-                    console.log("DecodeHeader time (ms) " + timer.GetElapsedTime());
+                    //console.log("DecodeHeader time (ms) " + timer.GetElapsedTime());
                     // allocate memory
                     if (dynamicVector.GetNVector() > 0 && dynamicVector.GetDimVector()) {
                         dynamicVector.SetVectors(new Float32Array(dynamicVector.GetNVector() * dynamicVector.GetDimVector()));
@@ -186,14 +186,14 @@ var Channel = exports.Channel = Object.create(Base, {
                         dynamicVector.SetMaxArray(new Float32Array(dynamicVector.GetDimVector()));
                         dynamicVector.SetStride(dynamicVector.GetDimVector());
                     }
-                    console.log("Dynamic vector info:"+parameter.id);
-                    console.log("\t# vectors   " + dynamicVector.GetNVector());
-                    console.log("\tdim         " + dynamicVector.GetDimVector());
+                    //console.log("Dynamic vector info:"+parameter.id);
+                    //console.log("\t# vectors   " + dynamicVector.GetNVector());
+                    //console.log("\tdim         " + dynamicVector.GetDimVector());
                     // decode DV
                     timer.Tic();
                     decoder.DecodePlayload(dynamicVector, bstream);
                     timer.Toc();
-                    console.log("DecodePlayload time " + timer.GetElapsedTime() + " ms, " + size + " bytes (" + (8.0 * size / dynamicVector.GetNVector()) + " bpv)");
+                    //console.log("DecodePlayload time " + timer.GetElapsedTime() + " ms, " + size + " bytes (" + (8.0 * size / dynamicVector.GetNVector()) + " bpv)");
 
                     return dynamicVector.GetVectors();
                 }
