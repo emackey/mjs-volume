@@ -95,7 +95,7 @@ exports.SceneRenderer = Object.create(Object.prototype, {
                         timer.Tic();
                         decoder.DecodeHeader(ifs, bstream);
                         timer.Toc();
-                        console.log("DecodeHeader time (ms) " + timer.GetElapsedTime());
+                        //console.log("DecodeHeader time (ms) " + timer.GetElapsedTime());
                         // allocate memory
                         var byteSize =
                             3 * 4 * ifs.GetNCoord() +
