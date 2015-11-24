@@ -60,7 +60,7 @@ exports.Scene = Target.specialize( {
         get: function() {
             if (this.status === "loaded") {
                 if (this._rootNode == null) {
-                    this._rootNode = Montage.create(Node);
+                    this._rootNode = new Node();
                     this._rootNode.scene = this;
                     this._rootNode.id = this.glTFElement.rootNode.id;
                 }

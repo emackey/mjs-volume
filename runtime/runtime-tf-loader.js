@@ -408,7 +408,7 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
                 return false;
             }
 
-            var scene = Object.create(glTFScene).init();
+            var scene = new glTFScene().init();
             scene.ids = this._ids;
             scene.id = entryID;
             scene.name = description.name;

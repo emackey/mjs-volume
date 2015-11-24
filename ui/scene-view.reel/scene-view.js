@@ -61,7 +61,7 @@ var CameraController = require("controllers/camera-controller").CameraController
 var Transform = require("runtime/transform").Transform;
 var Component3D = require("runtime/component-3d").Component3D;
 var ActionDispatcher = require("runtime/action-dispatcher").ActionDispatcher;
-var Application = require("montage/core/application").Application;
+var Application = require("montage/core/application").application;
 require("runtime/dependencies/webgl-debug");
 /**
     Description TODO
@@ -264,7 +264,7 @@ exports.SceneView = Component.specialize( {
     cameraController: {
         get: function() {
             if (this._cameraController == null) {
-                this._cameraController = Montage.create(CameraController);
+                this._cameraController = new CameraController();
             }
             return this._cameraController;
         }
@@ -645,7 +645,7 @@ exports.SceneView = Component.specialize( {
 
     getRelativePositionToCanvas: {
         value: function(event) {
-            return dom.convertPointFromPageToNode(this.canvas, Point.create().init(event.pageX, event.pageY));
+            return dom.convertPointFromPageToNode(this.canvas, new Point().init(event.pageX, event.pageY));
         }
     },
 
@@ -836,7 +836,7 @@ exports.SceneView = Component.specialize( {
             var self = this;
             var techniquePromise = BuiltInAssets.assetWithName("gradient");
             techniquePromise.then(function (glTFScene_) {
-                var scene = Montage.create(Scene).init(glTFScene_);
+                var scene = new Scene().init(glTFScene_);
                 self.gradientRenderer = Object.create(SceneRenderer);
                 self.gradientRenderer.init(webGLRenderer, null);
                 self.gradientRenderer.scene = scene.glTFElement;
@@ -851,7 +851,7 @@ exports.SceneView = Component.specialize( {
             }, function (progress) {
             });
 
-            this.actionDispatcher = ActionDispatcher.create().initWithScene(this.scene);
+            this.actionDispatcher = new ActionDispatcher().initWithScene(this.scene);
 
             this.needsDraw = true;
 
@@ -1447,7 +1447,7 @@ exports.SceneView = Component.specialize( {
 
             var parent = this.parentComponent;
             var animationTimeout = null;
-            var composer = TranslateComposer.create();
+            var composer = new TranslateComposer();
             composer.animateMomentum = true;
             composer.hasMomentum = true;
             composer.allowFloats = true;

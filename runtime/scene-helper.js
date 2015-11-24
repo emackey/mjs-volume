@@ -60,7 +60,7 @@ var SceneHelper = exports.SceneHelper = Object.create(Object.prototype, {
             var viewPoints = this.getGLTFViewPoints(scene);
             var m3dNodes = [];
             viewPoints.forEach( function(viewPoint) {
-                var m3dNode = Montage.create(Node);
+                var m3dNode = new Node();
                 m3dNode.scene = scene;
                 //FIXME: should have probably used baseId here
                 m3dNode.id = viewPoint.baseId;
@@ -103,7 +103,7 @@ var SceneHelper = exports.SceneHelper = Object.create(Object.prototype, {
             var cameraNode = SceneHelper.createGLTFNodeIncludingCamera(cameraName);
             var scene = m3dScene.glTFElement;
             scene.ids[cameraNode.baseId] = cameraNode;
-            var m3dNode = Montage.create(Node);
+            var m3dNode = new Node();
             m3dNode.scene = m3dScene;
             m3dNode.id = cameraNode.baseId;
             return m3dNode;
@@ -123,7 +123,7 @@ var SceneHelper = exports.SceneHelper = Object.create(Object.prototype, {
                             var glTFMaterial = primitive.material;
                             var material;                            
                             if (glTFMaterial.component3D == null) {
-                                material = Montage.create(Material);
+                                material = new Material();
                                 material.scene = scene;
                                 material.id = glTFMaterial.baseId;
                                 scene.glTFElement.ids[glTFMaterial.baseId] = glTFMaterial;
