@@ -5,7 +5,7 @@
 var Component = require("montage/ui/component").Component,
     Dict = require("collections/dict"),
     SceneTreeFactory = require("./core/scene-tree-factory").SceneTreeFactory,
-    Application = require("montage/core/application").Application,
+    Application = require("montage/core/application").application,
 
     /*jshint -W079 */
     Node = require("runtime/node").Node,

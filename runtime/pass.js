@@ -257,7 +257,9 @@ var Pass = Object.create(Object.prototype, {
     }
 });
 
-var ProgramPass = exports.ProgramPass = Montage.create(Pass, {
+var ProgramPass = exports.ProgramPass = Object.create(Pass);
+
+Montage.defineProperties(ProgramPass, {
 
     _attributes: { value: null, writable: true },
     _uniforms: { value: null, writable: true },

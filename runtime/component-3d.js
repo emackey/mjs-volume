@@ -31,15 +31,7 @@ require("runtime/dependencies/gl-matrix");
 
 //FIXME: add a state to now that resolution of id pending to avoid adding useless listeners
 //This currently *can't* happen with the code path in use, the API would allow it.
-exports.Component3D = Target.specialize( {
-
-    _ENTER: { value: "COMPONENT_ENTER"},
-
-    _EXIT: { value: "COMPONENT_EXIT"},
-
-    _TOUCH_DOWN: { value: "_TOUCH_DOWN"},
-
-    _TOUCH_UP: { value: "_TOUCH_UP"},
+var Component3D = exports.Component3D = Target.specialize( {
 
     //FIXME: work-around
     self: {
@@ -989,7 +981,7 @@ exports.Component3D = Target.specialize( {
             var actionEvent;
 
             switch (action) {
-                case this._ENTER:
+                case Component3D._ENTER:
                     state = "hover";
                     var hoverEvent = document.createEvent("CustomEvent");
                     hoverEvent.initCustomEvent("hover", true, true, {
@@ -998,11 +990,11 @@ exports.Component3D = Target.specialize( {
                     this.dispatchEvent(hoverEvent);
                     break;
 
-                case this._EXIT:
+                case Component3D._EXIT:
                     state = this.__STYLE_DEFAULT__; //this is probably wrong - what happens if active is on going too ?
                     break;
 
-                case this._TOUCH_DOWN:
+                case Component3D._TOUCH_DOWN:
                     state = "active";
                     actionEvent = document.createEvent("CustomEvent");
                     actionEvent.initCustomEvent("action", true, true, {
@@ -1012,7 +1004,7 @@ exports.Component3D = Target.specialize( {
                     this.dispatchEvent(actionEvent);
                     break;
 
-                case this._TOUCH_UP:
+                case Component3D._TOUCH_UP:
                     state = this.__STYLE_DEFAULT__; //this is probably wrong - what happens if hover is on going too ?
                     var className = Montage.getInfoForObject(this).objectName;
                     if (className === "Material") {
@@ -1048,5 +1040,14 @@ exports.Component3D = Target.specialize( {
     blueprintModuleId:require("montage")._blueprintModuleIdDescriptor,
 
     blueprint:require("montage")._blueprintDescriptor
+
+}, {
+    _ENTER: { value: "COMPONENT_ENTER"},
+
+    _EXIT: { value: "COMPONENT_EXIT"},
+
+    _TOUCH_DOWN: { value: "_TOUCH_DOWN"},
+
+    _TOUCH_UP: { value: "_TOUCH_UP"},
 
 });
