@@ -8,7 +8,7 @@
         "q" : "0.9.6",
         "native": "~0.2.0",
         "collections": "~0.2.1",
-        "cssom" : "git+https://github.com/montagejs/CSSOM.git#gh-pages",
+        "cssom" : "cdebost/CSSOM",
         "url" : "0.7.9"
     },
     "repository": {
