@@ -1,8 +1,12 @@
 {
   "name": "mjs-volume",
   "description": "MontageJS 3D components",
-  "license": "BSD-3-Clause",
   "version": "0.2.0",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/montagestudio/mjs-volume.git"
+  },
   "dependencies": {
     "collections": "~0.2.1",
     "cssom": "montagejs/CSSOM.git",
@@ -12,9 +16,5 @@
     "native": "^0.3.0",
     "q": "0.9.6",
     "url": "0.7.9"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/fabrobinet/mjs-volume.git"
   }
 }
