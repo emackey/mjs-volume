@@ -62,6 +62,10 @@ var Transform = require("runtime/transform").Transform;
 var Component3D = require("runtime/component-3d").Component3D;
 var ActionDispatcher = require("runtime/action-dispatcher").ActionDispatcher;
 var Application = require("montage/core/application").application;
+
+var Point = require("montage/core/geometry/point").Point,
+    convertPointFromPageToNode = Point.convertPointFromPageToNode;
+
 require("runtime/dependencies/webgl-debug");
 /**
     Description TODO
@@ -615,7 +619,7 @@ exports.SceneView = Component.specialize( {
 
     getRelativePositionToCanvas: {
         value: function(event) {
-            return dom.convertPointFromPageToNode(this.canvas, new Point().init(event.pageX, event.pageY));
+            return convertPointFromPageToNode(this.canvas, new Point().init(event.pageX, event.pageY));
         }
     },
 
