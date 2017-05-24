@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "collections": "~0.2.1",
-    "cssom": "montagejs/CSSOM.git",
+    "cssom": "https://github.com/montagejs/cssom.git#gh-pages",
     "digit": "^3.0.0",
     "matte": "^0.3.0",
     "montage": "^17.0.8",
