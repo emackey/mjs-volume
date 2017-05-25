@@ -399,8 +399,6 @@ exports.SceneView = Component.specialize( {
         }
     },
 
-
-
     // Montage
 
     constructor: {
@@ -408,7 +406,6 @@ exports.SceneView = Component.specialize( {
             this.super();
         }
     },
-
 
     animationDidStart: {
         value: function(animation) {
