@@ -13,6 +13,15 @@ Features include:
 * Easy assignment of view points.
 * Play, pause, and stop animations from its associated Scene component.
 
+## Testing
+
+    ```text
+    git clone mjs-volume
+    cd git@github.com:montagestudio/mjs-volume.git
+    npm install
+    npm run start:demo
+    ```
+
 ## Adding SceneView to a Project
 
 The MontageJS 3D components are not part of the dependencies installed when you create a new project using the minit command line tool. To use the MontageJS 3D components, you have to add them to your MontageJS project:
@@ -24,8 +33,8 @@ The MontageJS 3D components are not part of the dependencies installed when you 
     ```text
     ...
     "dependencies": {
-        "montage": "~0.13.9",
-        "digit": "~0.4.0",
+        "montage": "git://github.com/fabrobinet/montage.git",
+        "digit": "git://github.com/fabrobinet/digit.git",
         "mjs-volume" : "git://github.com/fabrobinet/mjs-volume.git"
     },
     ...
@@ -33,7 +42,7 @@ The MontageJS 3D components are not part of the dependencies installed when you 
 3. Open a Terminal window, switch (cd) to your project directory, and type:
 
     ```text
-    npm install
+    npm install mjs-volume
     ```
     
 4. Press return to add the module
@@ -41,7 +50,6 @@ The MontageJS 3D components are not part of the dependencies installed when you 
 ## Using the SceneView Component
 
 The SceneView component displays content in a JSON-based media type format called <a href="http://www.khronos.org/gltf" target="_blank">OpenGL Transmission Format</a> (glTF). In order for 3D assets to be displayed by the SceneView component, you first have to convert the assets to glTF.
-
 
 ### Converting 3D Assets to glTF
 
