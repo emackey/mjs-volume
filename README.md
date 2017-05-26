@@ -15,6 +15,8 @@ Features include:
 
 ## Testing
 
+    0. Open a Terminal
+    
     ```text
     git clone mjs-volume
     cd git@github.com:montagestudio/mjs-volume.git
