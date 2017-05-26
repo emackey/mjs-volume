@@ -16,5 +16,13 @@
     "native": "^0.3.0",
     "q": "0.9.6",
     "url": "0.7.9"
+  },
+  "devDependencies": {
+    "concurrently": "^3.4.0",
+    "http-server": "^0.9.0",
+    "open": "0.0.5"
+  },
+  "scripts": {
+    "start:demo": "concurrently \"http-server -a localhost -p 8085\" \"open http://localhost:8085/demo/index.html\""
   }
 }
