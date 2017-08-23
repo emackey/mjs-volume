@@ -211,8 +211,14 @@ exports.Projection = Object.create(Base, {
     initWithDescription: {
         value: function(description) {
             this.__Base_init();
-            this.projection = description.type;
-            description = description[this.projection];
+            //this.projection = description.type;
+            this.projection = description.type ? description.type : null;
+            if(!this.projection) {
+                this.projection = description.projection ? description.projection : null;
+            }
+            description = (this.projection && description[this.projection])
+             ? description[this.projection] 
+             : description;
             this.xfov = description.xfov ? description.xfov : 0;
             this.yfov = description.yfov ? description.yfov : 0;
             this.xmag = description.xmag ? description.xmag : 1;
