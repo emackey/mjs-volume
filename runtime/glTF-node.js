@@ -70,24 +70,37 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
         }
     },
 
+    _computeBBOXForMeshes: {
+        value: function(meshes) {
+            var count = meshes.length;
+            if (count > 0) {
+                var bbox = meshes[0].boundingBox;
+                if (bbox) {
+                    var i;
+                    for (i = 1 ; i <  count ; i++) {
+                        var aBBox = meshes[i].boundingBox;
+                        if (aBBox) { //it could be not here here as we are loading everything asynchronously
+                            bbox = Utilities.mergeBBox(bbox, aBBox);
+                        }
+                    }
+                    this._boundingBox = bbox;//Utilities.transformBBox(bbox, this.transform);
+                }
+            }
+        }
+    },
+
     _computeBBOXIfNeeded: {
         enumerable: false,
         value: function() {
-            if (!this._boundingBox) {
+            if (this._boundingBox == null) {
                 var meshes = this._properties["meshes"];
-                var count = this.meshes.length;
-                if (count > 0) {
-                    var bbox = this.meshes[0].boundingBox;
-                    if (bbox) {
-                        var i;
-                        for (i = 1 ; i <  count ; i++) {
-                            var aBBox = this.meshes[i].boundingBox;
-                            if (aBBox) { //it could be not here here as we are loading everything asynchronously
-                                bbox = Utilities.mergeBBox(bbox, aBBox);
-                            }
-                        }
-                        this._boundingBox = bbox;//Utilities.transformBBox(bbox, this.transform);
+                if (this.instanceSkin != null) {
+                    if (this.instanceSkin.skin != null) {
+                        meshes = (meshes == null) ? this.instanceSkin.skin.sources : meshes.concat(this.instanceSkin.skin.sources);
                     }
+                }
+                if (meshes != null) {
+                    this._computeBBOXForMeshes(meshes);
                 }
             }
         }
@@ -98,24 +111,19 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
             //FIXME: this code is inefficient, BBOX be cached with dirty flags and invalidation (just like for worldMatrix)
             if (includesHierarchy) {
                 var ctx = mat4.identity();
-                var hierarchicalBBOX = this.boundingBox;
+                var hierarchicalBBOX = null;
                 this.apply( function(node, parent, parentTransform) {
-                    var modelMatrix = mat4.create();
-                    mat4.multiply( parentTransform, node.transform.matrix, modelMatrix);
                     if (node.boundingBox) {
-                        var bbox = Utilities.transformBBox(node.boundingBox, modelMatrix);
-
-                        if (hierarchicalBBOX) {
-                            if (node.meshes) {
-                                if (node.meshes.length > 0)
-                                    hierarchicalBBOX = Utilities.mergeBBox(bbox, hierarchicalBBOX);
-                            }
+                        var bbox = Utilities.transformBBox(node.boundingBox, node.worldMatrix);
+                        if (hierarchicalBBOX != null) {
+                            hierarchicalBBOX = Utilities.mergeBBox(bbox, hierarchicalBBOX);
                         } else {
                             hierarchicalBBOX = bbox;
                         }
                     }
-                    return modelMatrix;
+                    return null;
                 }, true, ctx);
+
                 return hierarchicalBBOX;
             } else {
                 return this.boundingBox;
@@ -315,7 +323,6 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
 
             if (callback) {
                 ctx = callback(this, parent, ctx);
-
                 if (recurse) {
                     this.children.forEach( function(node) {
                         node._apply(callback, recurse, this, ctx);
@@ -384,7 +391,7 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
 
     _nodeWithJointID: {
         value: function( id) {
-            if (this.jointId === id)
+            if (this.jointName === id)
                 return this;
 
             if (this.children) {
@@ -442,7 +449,7 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
 
     _worldMatrix: { value: null, writable:true },
 
-    _offsetMatrix: { value: null, writable:true },
+    _offsetTransform: { value: null, writable:true },
 
     _originVector: { value: null, writable:true },
 
@@ -454,7 +461,7 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
                     mat4.multiply(this.parent.worldMatrix, this.transform.matrix, this._worldMatrix);
                     this._worldMatrixIsDirty = false;
                 }
-                if (this._offsetMatrix != null) {
+                if (this._offsetTransform != null) {
                     var bbox = this.getBoundingBox(false);
                     if (bbox != null) {
                         //this is now just for testing purposes, not optimized * at all *
@@ -464,6 +471,7 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
 
                         var originVector = vec3.createFrom(0.5, 0.5, 0.5);
                         if (this._originVector != null) {
+
                             originVector[0] = this._originVector[0] / 100.0;
                             originVector[1] = this._originVector[1] / 100.0;
                             originVector[2] = this._originVector[2] / 100.0;
@@ -471,12 +479,12 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
 
                         var mid = [
                             (bbox[0][0] + bbox[1][0]) * originVector[0],
-                            (bbox[0][1] + bbox[1][1]) * originVector[0],
-                            (bbox[0][2] + bbox[1][2]) * originVector[0]];
+                            (bbox[0][1] + bbox[1][1]) * originVector[1],
+                            (bbox[0][2] + bbox[1][2]) * originVector[2]];
 
                         var tr1 = vec3.create(mid);
                         mat4.translate(res, tr1);
-                        mat4.multiply(res, this._offsetMatrix, res2);
+                        mat4.multiply(res, this._offsetTransform.matrix, res2);
                         mat4.multiply(this._worldMatrix,  res2, res);
                         tr1[0] = -tr1[0];
                         tr1[1] = -tr1[1];
@@ -542,6 +550,21 @@ var glTFNode = exports.glTFNode = Object.create(Base, {
                 }
             }
             return null;
+        }
+    },
+
+    nodesWithPropertyNamed: {
+        value: function( propertyName, nodes) {
+            if (this[propertyName] != null) {
+                nodes.push(this);                
+            }
+
+            if (this.children) {
+                for (var i = 0 ; i < this.children.length ; i++) {
+                    var node = this.children[i];
+                    node.nodesWithPropertyNamed(propertyName, nodes);
+                }
+            }
         }
     },
 

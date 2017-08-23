@@ -32,6 +32,7 @@ exports.Material = Component3D.specialize( {
             this.super();
 
             this.addRangeAtPathChangeListener("filterColor", this, "handleFilterColorChange");
+            this.addRangeAtPathChangeListener("emission", this, "handleEmissionChange");
             this.addOwnPropertyChangeListener("glTFElement", this);
             this.addOwnPropertyChangeListener("image", this);
             this.addOwnPropertyChangeListener("opacity", this);
@@ -40,17 +41,22 @@ exports.Material = Component3D.specialize( {
 
     filterColor: { value: [1,1,1,1]},
 
+    emission: { value: [0,0,0,0]},
+
     _originalOpacity: { value: 1, writable: true },
 
     handleGlTFElementChange: {
         value: function() {
             this.handleFilterColorChange();
+            this.handleEmissionChange();
             this.handleImageChange();
 
             this._originalOpacity = this._opacity;
             if (this._opacity == null) {
-                if (this.glTFElement.parameters["transparency"] != null) {
-                    this._originalOpacity = this._opacity = this.glTFElement.parameters["transparency"].value;
+                if (this.glTFElement != null) {
+                    if (this.glTFElement.parameters["transparency"] != null) {
+                        this._originalOpacity = this._opacity = this.glTFElement.parameters["transparency"].value;
+                    }
                 }
             } else {
                 this.handleOpacityChange();
@@ -78,6 +84,20 @@ exports.Material = Component3D.specialize( {
             }
         }
     },
+
+    handleEmissionChange: {
+        value: function(plus, minus, index) {
+            if (this.glTFElement != null) {
+                if (this.glTFElement.parameters["emission"]) {
+                    this.glTFElement.parameters["emission"].value = this.emission;
+                    if (this.scene) {
+                        this.scene.dispatchEventNamed("materialUpdate", true, false, this);
+                    }
+                }
+            }
+        }
+    },
+
 
     handleOpacityChange: {
         value: function() {
@@ -111,13 +131,14 @@ exports.Material = Component3D.specialize( {
 
     parameterForImagePath: {
         value: function(imagePath) {
+            var GL = WebGLRenderingContext.prototype;
 
             var sampler = {
-                "magFilter": WebGLRenderingContext.LINEAR,
-                "minFilter": WebGLRenderingContext.LINEAR,
+                "magFilter": GL.LINEAR,
+                "minFilter": GL.LINEAR,
                 "type": "sampler",
-                "wrapS" : WebGLRenderingContext.REPEAT,
-                "wrapT" : WebGLRenderingContext.REPEAT
+                "wrapS" : GL.REPEAT,
+                "wrapT" : GL.REPEAT
             };
 
             var source = {
@@ -132,12 +153,12 @@ exports.Material = Component3D.specialize( {
             var parameterValue = {
                 "baseId": "texture-" + imagePath,
                 "id": "texture-" + imagePath,
-                "format": WebGLRenderingContext.RGBA,
-                "internalFormat" : WebGLRenderingContext.RGBA,
+                "format": GL.RGBA,
+                "internalFormat" : GL.RGBA,
                 "sampler" : sampler,
                 "source" : source,
                 "type" : "texture",
-                "target" : WebGLRenderingContext.TEXTURE_2D
+                "target" : GL.TEXTURE_2D
             };
 
             var parameter = {

@@ -28,7 +28,7 @@ var Utilities = require("runtime/utilities").Utilities;
 
 exports.Skin = Object.create(Object.prototype, {
 
-    jointsIds: { value: null, writable: true },
+    jointNames: { value: null, writable: true },
 
     nodesForSkeleton: { value: null, writable: true },
 
@@ -38,14 +38,14 @@ exports.Skin = Object.create(Object.prototype, {
 
     matricesForSkeleton:  { value: null, writable: true },
 
-    sources:  { value: null, writable: true },
+    meshes:  { value: null, writable: true },
 
     init: {
         value: function() {
-            this.jointsIds = [];
+            this.jointNames = [];
             this.nodesForSkeleton = {};
             this.matricesForSkeleton = {};
-            this.sources = [];
+            this.meshes = [];
             return this;
         }
     },
@@ -67,8 +67,7 @@ exports.Skin = Object.create(Object.prototype, {
 
     process: {
         value: function(node, resourceManager) {
-            var skeletons = Object.keys(this.nodesForSkeleton);
-
+            var skeletons = node.instanceSkin.skeletons;
             var objectSpace = mat4.create();
             mat4.inverse(node.worldMatrix, objectSpace);
 
@@ -76,7 +75,7 @@ exports.Skin = Object.create(Object.prototype, {
                 var nodes = this.nodesForSkeleton[skeleton];
                 var matrices = this.matricesForSkeleton[skeleton];
                 if (!matrices) {
-                    var length = 16 * this.jointsIds.length;
+                    var length = 16 * this.jointNames.length;
                     matrices = new Float32Array(length);
                     this.matricesForSkeleton[skeleton] = matrices;
                     var identity = mat4.identity();
@@ -86,12 +85,12 @@ exports.Skin = Object.create(Object.prototype, {
                 }
                 var inverseBindMatrices = resourceManager.getResource(this.inverseBindMatricesDescription, this.inverseBindMatricesDelegate);
                 if (inverseBindMatrices) {
-                    this.sources.forEach(function(source) {
+                    this.meshes.forEach(function(source) {
                         //FIXME: assume mesh here but it could be morph (later..)
                         var mesh = source;
 
                         var BSM = this.bindShapeMatrix;
-                        var jointsCount = this.jointsIds.length;
+                        var jointsCount = this.jointNames.length;
                         var IBM = mat4.create();
                         for (var i = 0; i < jointsCount ; i++) {
                             for (var j = 0; j < 16 ; j++) {

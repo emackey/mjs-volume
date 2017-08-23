@@ -26,20 +26,12 @@ var glTFNode = require("runtime/glTF-node").glTFNode;
 var Transform = require("runtime/transform").Transform;
 var Target = require("montage/core/target").Target;
 var Set = require("collections/set");
-require("runtime/dependencies/CSSOM");
+var CSSOM = require("cssom");
 require("runtime/dependencies/gl-matrix");
 
 //FIXME: add a state to now that resolution of id pending to avoid adding useless listeners
 //This currently *can't* happen with the code path in use, the API would allow it.
-exports.Component3D = Target.specialize( {
-
-    _ENTER: { value: "COMPONENT_ENTER"},
-
-    _EXIT: { value: "COMPONENT_EXIT"},
-
-    _TOUCH_DOWN: { value: "_TOUCH_DOWN"},
-
-    _TOUCH_UP: { value: "_TOUCH_UP"},
+var Component3D = exports.Component3D = Target.specialize( {
 
     //FIXME: work-around
     self: {
@@ -58,7 +50,24 @@ exports.Component3D = Target.specialize( {
 
     handleEnteredDocument: {
         value: function() {
-            this.classListDidChange();
+        }
+    },
+
+    shouldPerformHitTest: { value: false },
+
+    addEventListener: {
+        value: function addEventListener(type, listener, useCapture) {
+            if (this.scene) {
+                var className = Montage.getInfoForObject(this).objectName;
+                if (className == "Node") {
+                    this.scene.nodesShouldBeHitTested = true;
+                } else if (className == "Material") {
+                    this.scene.materialsShouldBeHitTested = true;
+                }
+            }    
+            this.shouldPerformHitHest = true;
+
+            this.super(type, listener, useCapture);
         }
     },
 
@@ -144,6 +153,9 @@ exports.Component3D = Target.specialize( {
                         this.glTFElement.component3D = this;
 
                         this.classListDidChange();
+                        if (this.shouldPerformHitHest) {
+                            this.scene.shouldBeHitTested = true;
+                        }
                     }
                 }
             }
@@ -171,27 +183,13 @@ exports.Component3D = Target.specialize( {
         }
     },
 
-    handleStyleSheetsChange: {
-        value: function(value, key, object) {
-            var self = this;
-            setTimeout(function() {
-                self.scene.removeOwnPropertyChangeListener(key, self);
-            }, 1);
-        }
-    },
-
     _sceneDidChange: {
         value: function() {
             this.resolveIdIfNeeded();
             if (this.scene) {
                 this.scene.addEventListener("enteredDocument", this);
+                this.scene.addEventListener("styleSheetsDidLoad", this);
             }
-        }
-    },
-
-    removeAllCSSRules: {
-        value: function() {
-
         }
     },
 
@@ -204,9 +202,15 @@ exports.Component3D = Target.specialize( {
             var state = null;
 
             if (selectorName.indexOf(":active") !== -1) {
-                return "active"
+                if (this.scene) {
+                    this.scene.shouldBeHitTested = true;
+                }
+                return "active";
             } else if (selectorName.indexOf(":hover") !== -1) {
-                return "hover"
+                if (this.scene) {
+                    this.scene.shouldBeHitTested = true;
+                }
+                return "hover";
             } else if (selectorName.indexOf(":") !== -1) {
                 return  null;
             }
@@ -233,7 +237,9 @@ exports.Component3D = Target.specialize( {
     },
 
     _createStyleStateAndPropertyIfNeeded:  {
-        value: function(style, state, property) {
+        value: function(state, property) {
+            var style = this._createDefaultStyleIfNeeded();
+
             if (style[state] == null) {
                 style[state] = {};
             }
@@ -248,8 +254,8 @@ exports.Component3D = Target.specialize( {
     },
 
     _getStylePropertyObject: {
-        value: function(style, state, property) {
-            return this._createStyleStateAndPropertyIfNeeded(style, state, property);
+        value: function(state, property) {
+            return this._createStyleStateAndPropertyIfNeeded(state, property);
         }
     },
 
@@ -267,55 +273,47 @@ exports.Component3D = Target.specialize( {
         value: function(declaration) {
             var components = declaration.split(" ");
             var transformOrigin;
-            if (components.length == 3) {
-                transformOrigin = vec3.create();
+
+            if (components.length >= 2) {
+                transformOrigin = vec2.create();
 
                 transformOrigin[0] = parseFloat(components[0]);
                 transformOrigin[1] = parseFloat(components[1]);
-                transformOrigin[2] = parseFloat(components[2]);
 
                 return transformOrigin;
             }
 
-            if (components.length == 2) {
-                transformOrigin = vec3.create();
-
-                transformOrigin[0] = parseFloat(components[0]);
-                transformOrigin[1] = parseFloat(components[1]);
-                transformOrigin[2] = 50;
-
-                return transformOrigin;
-            }
-
-
-            return vec3.createFrom(50,50,50);
+            return vec2.createFrom(50,50);
         }
     },
 
-    _createMatrixFromCSSTransformDeclaration: {
+    _createTransformFromCSS: {
         value: function(declaration) {
 
-            function _RotateWithCSSAngleAxis(mat, floatValues) {
-                var PI = 3.1415926535;
-                var DEG_TO_RAD = PI/180.0;
-                floatValues[3] *= DEG_TO_RAD;
-                mat4.rotate(mat, floatValues[3], floatValues);
-            }
+            var PI = 3.1415926535;
+            var DEG_TO_RAD = PI/180.0;
 
+            var transform = Object.create(Transform).init();
+            var rotation, translation, scale;
             var matrix = mat4.identity();
             var index = 0;
             declaration = declaration.trim();
             var end = 0, command;
 
+            var scalesCount = 0;
+            var rotationsCount = 0;
+            var translationsCount = 0;
+            var matricesCount = 0;
+
             while (end !== -1) {
                 end = declaration.indexOf("(", index);
-                if (end == -1)
+                if (end === -1)
                     break;
                 command = declaration.substring(index, end);
                 index = end + 1;
 
                 end = declaration.indexOf(")", index);
-                if (end == -1)
+                if (end === -1)
                     break;
                 var valuesDec = declaration.substring(index, end);
 
@@ -337,66 +335,118 @@ exports.Component3D = Target.specialize( {
                                 m[8], m[9], m[10], m[11],
                                 m[12], m[13], m[14], m[15]);
                             mat4.multiply(matrix, mat);
+                            matricesCount++;
                         }
                         break;
                     case "translate3d":
                         if (this._checkTransformConsistency(floatValues, 3)) {
+                            if (translationsCount === 0) 
+                                transform.translation = vec3.create(floatValues);
                             mat4.translate(matrix, floatValues);
+                            translationsCount++;
                         }
                         break;
                     case "translateX":
-                        if (this._checkTransformConsistency(floatValues, 3)) {
-                            mat4.translate(matrix, [floatValues[0], 0, 0]);
+                        if (this._checkTransformConsistency(floatValues, 1)) {
+                            translation = [floatValues[0], 0, 0];
+                            if (translationsCount === 0) 
+                                transform.translation = vec3.create(translation);
+                            mat4.translate(matrix, translation);
+                            translationsCount++;
                         }
                         break;
                     case "translateY":
-                        if (this._checkTransformConsistency(floatValues, 3)) {
-                            mat4.translate(matrix, [0, floatValues[0], 0]);
+                        if (this._checkTransformConsistency(floatValues, 1)) {
+                            translation = [0, floatValues[0], 0];
+                            if (translationsCount === 0) 
+                                transform.translation = vec3.create(translation);
+                            mat4.translate(matrix, translation);
+                            translationsCount++;
                         }
                         break;
                     case "translateZ":
-                        if (this._checkTransformConsistency(floatValues, 3)) {
-                            mat4.translate(matrix, [0, 0, floatValues[0]]);
+                        if (this._checkTransformConsistency(floatValues, 1)) {
+                            translation = [0, 0, floatValues[0]];
+                            if (translationsCount === 0) 
+                                transform.translation = vec3.create(translation);
+                            mat4.translate(matrix, translation);
+                            translationsCount++;
                         }
                         break;
                     case "scale3d":
                         if (this._checkTransformConsistency(floatValues, 3)) {
+                            if (scalesCount === 0) 
+                                transform.scale = vec3.create(floatValues);
                             mat4.scale(matrix, floatValues);
+                            translationsCount++;
                         }
                         break;
                     case "scaleX":
-                        if (this._checkTransformConsistency(floatValues, 3)) {
-                            mat4.scale(matrix, [floatValues[0], 1, 1]);
+                        if (this._checkTransformConsistency(floatValues, 1)) {
+                            scale = [floatValues[0], 1, 1];
+                            if (scalesCount === 0) 
+                                transform.scale = vec3.create(scale);
+                            mat4.scale(matrix, scale);
+                            scalesCount++;
                         }
                         break;
                     case "scaleY":
-                        if (this._checkTransformConsistency(floatValues, 3)) {
-                            mat4.scale(matrix, [1, floatValues[0], 1]);
+                        if (this._checkTransformConsistency(floatValues, 1)) {
+                            scale = [1, floatValues[0], 1];
+                            if (scalesCount === 0) 
+                                transform.scale = vec3.create(scale);
+                            mat4.scale(matrix, scale);
+                            scalesCount++;
                         }
                         break;
                     case "scaleZ":
-                        if (this._checkTransformConsistency(floatValues, 3)) {
-                            mat4.scale(matrix, [1, 1, floatValues[0]]);
+                        if (this._checkTransformConsistency(floatValues, 1)) {
+                            scale = [1, 1, floatValues[0]];
+                            if (scalesCount === 0) 
+                                transform.scale = vec3.create(scale);
+                            mat4.scale(matrix, scale);
+                            scalesCount++;
                         }
                         break;
                     case "rotate3d":
                         if (this._checkTransformConsistency(floatValues, 4)) {
-                            _RotateWithCSSAngleAxis(matrix, floatValues);
+                            floatValues[3] *= DEG_TO_RAD;
+                            if (rotationsCount === 0)
+                                transform.rotation = floatValues;
+                            mat4.rotate(matrix, floatValues[3], floatValues);
+                            rotationsCount++;
                         }
                         break;
                     case "rotateX":
                         if (this._checkTransformConsistency(floatValues, 1)) {
-                            _RotateWithCSSAngleAxis(matrix, [1, 0, 0, floatValues[0]]);
+                            rotation =  [1, 0, 0, floatValues[0]];
+                            rotation[3] *= DEG_TO_RAD;
+                            if (rotationsCount === 0)
+                                transform.rotation = rotation;
+                            mat4.rotate(matrix, rotation[3], rotation);
+                            rotationsCount++;
                         }
+
                         break;
                     case "rotateY":
                         if (this._checkTransformConsistency(floatValues, 1)) {
-                            _RotateWithCSSAngleAxis(matrix, [0, 1, 0, floatValues[0]]);
+                            rotation =  [0, 1, 0, floatValues[0]];
+                            rotation[3] *= DEG_TO_RAD;
+                            if (rotationsCount === 0) 
+                                transform.rotation = rotation;
+                            mat4.rotate(matrix, rotation[3], rotation);
+                            rotationsCount++;
                         }
                         break;
                     case "rotateZ":
                         if (this._checkTransformConsistency(floatValues, 1)) {
-                            _RotateWithCSSAngleAxis(matrix, [0, 0, 1, floatValues[0]]);
+                            rotation =  [0, 0, 1, floatValues[0]];
+                            rotation[3] *= DEG_TO_RAD;
+                            if (rotationsCount === 0) {
+                                transform.rotation = rotation;
+                            }
+                            mat4.rotate(matrix, rotation[3], rotation);
+                            rotationsCount++;
                         }
                         break;
                     case "perspective":
@@ -407,7 +457,16 @@ exports.Component3D = Target.specialize( {
                         break;
                 }
             }
-            return matrix;
+            /*
+                if we have more than exactly one scale / one rotation / one translation, 
+                then we take the matrix we just built up
+                Otherwise we just return the transform that has of the advantage of holding axis angle
+                can represent any rotation angle...
+            */
+            if ((scalesCount > 1) || (rotationsCount > 1) || (translationsCount > 1) || (matricesCount > 0)) {
+                transform.matrix = matrix;
+            }
+            return transform;
         }
     },
 
@@ -416,11 +475,9 @@ exports.Component3D = Target.specialize( {
             //the property is handled up front
             var transition = {};
             var parsingState = ["duration", "timing-function", "delay"];
-
             //http://www.w3.org/TR/css3-transitions/#transition-timing-function-property
             // + need to handle steps () and cubic-bezier
             var timingFunctions = ["ease", "linear", "ease-in", "ease-out", "ease-in-out", "step-start"];
-
             var parsingStateIndex = 0;
             //each component is optional here but there is an order
             transitionComponents.forEach(function (transitionComponent) {
@@ -469,7 +526,6 @@ exports.Component3D = Target.specialize( {
 
     _applyCSSPropertyWithValueForState: {
         value: function(state, cssProperty, cssValue) {
-            var style = this._createDefaultStyleIfNeeded();
             //to be optimized (remove switch)
             if ((cssValue == null) || (cssProperty == null))
                 return false;
@@ -478,8 +534,7 @@ exports.Component3D = Target.specialize( {
                 return false;
             }
 
-            var declaration = this._getStylePropertyObject(style, state, cssProperty);
-
+            var declaration = this._getStylePropertyObject(state, cssProperty);
             //consider delegating this somewhere else..
             switch(cssProperty) {
                 case "transition": {
@@ -492,6 +547,7 @@ exports.Component3D = Target.specialize( {
                             if (transitionComponents.length > 0) {
                                 var transition = this._createTransitionFromComponents(transitionComponents);
                                 if (transition != null) {
+                                    var style = this._createDefaultStyleIfNeeded();
                                     style.transitions[actualProperty] = transition;
                                 }
                             }
@@ -499,26 +555,39 @@ exports.Component3D = Target.specialize( {
                     }
                 }
                     break;
-                case "offsetMatrix":
+                case "offsetTransform":
                     if (typeof cssValue === "string") {
-                        declaration.value = this._createMatrixFromCSSTransformDeclaration(cssValue);
+                        declaration.value = this._createTransformFromCSS(cssValue);
                     } else {
                         declaration.value = cssValue;
                     }
                     break;
-                case "originVector":
+                case "transformOrigin":
                     if (typeof cssValue === "string") {
                         declaration.value = this._createVectorFromCSSTransformOriginDeclaration(cssValue);
                     } else {
                         declaration.value = cssValue;
                     }
                     break;
-
+                case "transformZOrigin": 
+                    if (typeof cssValue === "string") {
+                        declaration.value = parseFloat(cssValue);
+                    } else {
+                        declaration.value = cssValue;
+                    }
+                    break;
                 case "visibility":
                     declaration.value = cssValue;
                     break;
                 case "opacity":
-                    declaration.value = cssValue;
+                    if (typeof cssValue === "string") {
+                        declaration.value = parseFloat(cssValue);
+                    } else {
+                        declaration.value = cssValue;
+                    }
+                    break;
+                case "cursor":
+                    declaration.value = cssValue;                    
                     break;
                 default:
                     return false;
@@ -536,22 +605,137 @@ exports.Component3D = Target.specialize( {
             if (cssProperty === "-webkit-transform-origin") {
                 cssProperty = "transform-origin";
             }
+            if (cssProperty === "-montage-transform-z-origin") {
+                cssProperty = "transformZOrigin";
+            }
 
             //FIXME: we keep this intermediate step as a placeholder to switch between
             //offset or transform some pending CSS verification in test-apps to validate what to do there.
             if (cssProperty === "transform") {
-                cssProperty = "offsetMatrix";
+                cssProperty = "offsetTransform";
             }
             if (cssProperty === "transform-origin") {
-                cssProperty = "originVector";
+                cssProperty = "transformOrigin";
             }
 
             return cssProperty;
         }
     },
 
+    _dumpStyle: {
+        value: function(state) {
+            console.log("**dump style:"+state);
+            var style = this._style[state];
+            for (var property in style) {
+                var cssValue = style[property];
+                if (cssValue.value == null)
+                    continue;                        
+                switch (property) {
+                    case "offsetTransform":
+                        console.log("property:"+property+ " value:"+mat4.str(cssValue.value.matrix));
+                        break;
+                    default:
+                        console.log("property:"+property+ " value:"+cssValue.value);
+                    break;
+                }
+            }
+        }
+    },
+
+    _dumpAllStyles: {
+        value: function() {
+            console.log("******** dump styles ********");
+
+            for (var state in this._style) {
+                this._dumpStyle(state);
+            }
+        }
+    },
+
     _applyStyleRule: {
-        value: function(selectorName, styleRule, appliedProperties) {
+        value: function(selectorName, styleRule) {
+            var state = this._stateForSelectorName(selectorName);
+            var declaration = null;
+            if (styleRule.style) {
+
+                if (state === this.__STYLE_DEFAULT__) {
+                    this.styleableProperties.forEach(function(property) {
+                    declaration = this._getStylePropertyObject(state, property);
+                    if (declaration.value == null) {
+                            this._applyCSSPropertyWithValueForState(    state, 
+                                                                        property, 
+                                                                        this.initialValueForStyleableProperty(property));
+                    } /*else {
+                            this._applyCSSPropertyWithValueForState(    state, 
+                                                                        property, 
+                                                                        declaration.value);
+                        }*/
+
+                    }, this);
+                } else {
+                    /*
+                    this.styleableProperties.forEach(function(property) {
+                        declaration = this._getStylePropertyObject(state, property);
+                        if (declaration.value == null) {
+                            declaration = this._getStylePropertyObject(this.__STYLE_DEFAULT__, property);
+                            this._applyCSSPropertyWithValueForState(    state, 
+                                                                        property, 
+                                                                        declaration.value);
+                        }
+                    }, this);*/
+                }
+
+                var length = styleRule.style.length;
+                if (length > 0) {
+                    var transition = null;
+                    for (var i = 0 ; i < length ; i++) {
+                        var cssProperty = styleRule.style[i];
+                        var cssValue = styleRule.style[cssProperty];
+
+                        cssProperty = this.propertyNameFromCSS(cssProperty);
+
+                        if (cssProperty.indexOf("transition-") != -1) {
+                            if (transition == null) {
+                                transition = {};
+                            }
+                            transition[cssProperty] = cssValue;
+                        } else {
+                             this._applyCSSPropertyWithValueForState(state, cssProperty, cssValue);
+                        }
+                    }
+                        if (transition != null) {
+                            cssProperty = "transition";
+                            //build up shorthand version of transition
+                            var shortHandTransition = "";
+                            if (transition["transition-property"] != null) {
+                                shortHandTransition += transition["transition-property"];
+
+                                if (transition["transition-duration"] != null) {
+                                    shortHandTransition += " ";
+                                    shortHandTransition += transition["transition-duration"];
+                                }
+
+                                if (transition["transition-timing-function"] != null) {
+                                    shortHandTransition += " ";
+                                    shortHandTransition += transition["transition-timing-function"];
+                                }
+
+                                if (transition["transition-timing-delay"] != null) {
+                                    shortHandTransition += " ";
+                                    shortHandTransition += transition["transition-timing-delay"];
+                                }
+
+                                this._applyCSSPropertyWithValueForState(state, cssProperty, shortHandTransition);                                
+                            }
+                        }
+
+                }
+            }
+        }
+    },
+
+    _removeStyleRule: {
+        value: function(selectorName, styleRule) {
             if (styleRule.style) {
                 var length = styleRule.style.length;
                 if (length > 0) {
@@ -560,15 +744,11 @@ exports.Component3D = Target.specialize( {
                         var cssValue = styleRule.style[cssProperty];
 
                         cssProperty = this.propertyNameFromCSS(cssProperty);
-
                         //should be states ?
                         var state = this._stateForSelectorName(selectorName);
                         if (state != null) {
-                            if (this._applyCSSPropertyWithValueForState(state, cssProperty, cssValue)) {
-                                if (appliedProperties != null) {
-                                    appliedProperties.add(cssProperty);
-                                }
-                            }
+                            var declaration = this._getStylePropertyObject(state, cssProperty);
+                            declaration.value = this.initialValueForStyleableProperty(cssProperty);
                         }
                     }
                 }
@@ -576,21 +756,39 @@ exports.Component3D = Target.specialize( {
         }
     },
 
-    _executeCurrentStyle: {
-        value: function(state) {
-            if (this._style == null)
-                return;
-            if (state !== this._state)
-                return;
+    appliedProperties: {
+        value: null, writable: true
+    },
 
-            var style = this._style;
+    _executeStylesForState: {
+        value: function(state) {
+            if (this.appliedProperties == null)
+                this.appliedProperties = {};
+
             if (this.styleableProperties != null) {
                 this.styleableProperties.forEach(function(property) {
-                    var declaration = this._getStylePropertyObject(style, state, property);
-                    var valueFound = false;
+                    var declaration = this._getStylePropertyObject(state, property);
+                    var propertyWasSet = false;
                     if (declaration) {
+
                         if (declaration.value != null) {
-                            this[property] = declaration.value;
+                            propertyWasSet = true;
+                            if (this.appliedProperties[property] !== declaration.value) {
+                                this[property] = declaration.value;
+                                this.appliedProperties[property] = declaration.value;
+                            }
+                        }
+                        
+                        if (propertyWasSet == false) {
+                            declaration = this._getStylePropertyObject(this.__STYLE_DEFAULT__, property);
+
+                            if (declaration.value != null) {
+                                propertyWasSet = true;
+                                if (this.appliedProperties[property] !== declaration.value) {
+                                    this[property] = declaration.value;
+                                    this.appliedProperties[property] = declaration.value;
+                                }
+                            }
                         }
                     }
                 }, this);
@@ -599,45 +797,61 @@ exports.Component3D = Target.specialize( {
     },
 
     _applySelectorNamed: {
-        value: function(selectorName, appliedProperties) {
-            var rule = this.retrieveCSSRule(selectorName);
-            var state = this._stateForSelectorName(selectorName);
-            if (rule) {
-                var style = this._createDefaultStyleIfNeeded();
-                if (rule.cssText) {
-                    var cssDescription = CSSOM.parse(rule.cssText);
-                    if (cssDescription) {
-                        var allRules = cssDescription.cssRules;
-                        allRules.forEach(function(styleRule) {
-                            this._applyStyleRule(selectorName, styleRule, appliedProperties);
-                        }, this);
-                    }
-                    if (state === this._state)
-                        this._executeCurrentStyle(state);
-                }
+        value: function(selectorName) {
+            var cssDescription = this.retrieveCSSRule(selectorName);
+            if (cssDescription) {
+                this._applyStyleRule(selectorName, cssDescription);
+            }
+        }
+    },
+
+    _applyClassNamed: {
+        value: function(className) {
+            this._applySelectorNamed("." + className);
+            this._applySelectorNamed("." + className + ":hover");
+            this._applySelectorNamed("." + className + ":active");
+        }
+    },
+
+    _removeSelectorNamed: {
+        value: function(selectorName) {
+            var cssDescription = this.retrieveCSSRule(selectorName);
+            if (cssDescription) {
+                this._removeStyleRule(selectorName, cssDescription);
+            }
+        }
+    },
+
+    _removeClassNamed: {
+        value: function(className, state) {
+            this._removeSelectorNamed("." + className + ":hover");
+            this._removeSelectorNamed("." + className + ":active");
+            this._removeSelectorNamed("." + className);
+        }
+    },
+
+    _removeSelectorsForState: {
+        value: function(state) {
+            var values = this.classList.enumerate();
+            for (var i = 0 ; i < values.length ; i++) {
+                var className = values[i][1];
+                this._removeClassNamed(className, state);
             }
         }
     },
 
     classListDidChange: {
         value: function() {
+            var self = this;
             if (this.classList) {
-                var appliedProperties = new Set();
                 var values = this.classList.enumerate();
                 for (var i = 0 ; i < values.length ; i++) {
-                    var selectorName = values[i][1];
-                    this._applySelectorNamed(selectorName, appliedProperties);
+                    var className = values[i][1];
+                    this._applyClassNamed(className);
                 }
 
-                this.styleableProperties.forEach(function(property) {
-                    if (appliedProperties.has(property) == false) {
-                        this[property] = this.initialValueForStyleableProperty(property);
-                    }
-                }, this);
-
-            } else {
-                this.removeAllCSSRules();
-            }
+                this._executeStylesForState(this._state); 
+            } 
         }
     },
 
@@ -710,78 +924,104 @@ exports.Component3D = Target.specialize( {
         value: function (plus, minus) {
             //on plus we stack classes
             if (plus != null) {
-                plus.forEach(function(selectorName) {
-                    this._applySelectorNamed(selectorName);
+                plus.forEach(function(className) {
+                    this._applyClassNamed(className);
                 }, this);
             }
-            //when something is removed is resync all
+            //when something is removed we resync all
             if (minus != null) {
-                if (minus.length > 0) {
-                    this.classListDidChange();
-                }
+                minus.forEach(function(className) {
+                    this._removeClassNamed(className);
+                }, this);
+                this.classListDidChange();
+                return;
             }
+
+            this._executeStylesForState(this._state); 
+            //this._dumpAllStyles();
+
+        }
+    },
+
+    cssDescriptions: {
+        value: null, writable: true
+    },
+
+    handleStyleSheetsDidLoad: {
+        value: function() {
+            this.scene.removeEventListener("styleSheetsDidLoad", this);
+            this.classListDidChange();
         }
     },
 
     //http://www.hunlock.com/blogs/Totally_Pwn_CSS_with_Javascript
     retrieveCSSRule: {
         value: function(ruleName) {
-            ruleName = ruleName.toLowerCase();                       // Convert test string to lower case.
-            if (document.styleSheets) {                            // If browser can play with stylesheets
-                for (var i = 0; i < document.styleSheets.length; i++) { // For each stylesheet
-                    var styleSheet = document.styleSheets[i];          // Get the current Stylesheet
-                    var ii= 0 ;                                        // Initialize subCounter.
-                    var cssRule=false;                               // Initialize cssRule.
-                    do {                                             // For each rule in stylesheet
-                        if (styleSheet.cssRules) {                    // Browser uses cssRules?
-                            cssRule = styleSheet.cssRules[ii];         // Yes --Mozilla Style
-                        } else {                                      // Browser usses rules?
-                            cssRule = styleSheet.rules[ii];            // Yes IE style.
-                        }                                             // End IE check.
-                        if (cssRule)  {                               // If we found a rule...
-                            if (cssRule.selectorText.toLowerCase() == ruleName) { //  match ruleName?
-                                return cssRule;                      // return the style object.
-                            }                                          // End found rule name
-                        }                                             // end found cssRule
-                        ii++;                                         // Increment sub-counter
-                    } while (cssRule)                                // end While loop
-                }                                                   // end For loop
-            }                                                      // end styleSheet ability check
-            return false;                                          // we found NOTHING!
+            for (var url in this.scene.styleSheets) {
+                var styleSheet = this.scene.styleSheets[url];
+                var allRules = styleSheet.cssRules;
+                for (var i = 0 ; i < allRules.length ; i++) {
+                    var styleRule = allRules[i];
+                    if (styleRule.selectorText != null) {
+                        if (styleRule.selectorText === ruleName) {
+                            return styleRule;
+                        }
+                    }
+                }
+            }
         }
     },
 
     //--
 
-    handleEventNamed: {
-        value: function(name) {
-
+    handleActionOnGlTFElement: {
+        value: function (glTFElement, action) {
             var state = this.__STYLE_DEFAULT__;
 
-            //console.log("name:"+name);
+            var actionEvent;
 
-            switch (name) {
-                case this._ENTER:
+            switch (action) {
+                case Component3D._ENTER:
                     state = "hover";
+                    var hoverEvent = document.createEvent("CustomEvent");
+                    hoverEvent.initCustomEvent("hover", true, true, {
+                        glTFElement: glTFElement
+                    });
+                    this.dispatchEvent(hoverEvent);
                     break;
-                case this._EXIT:
+
+                case Component3D._EXIT:
                     state = this.__STYLE_DEFAULT__; //this is probably wrong - what happens if active is on going too ?
                     break;
-                case this._TOUCH_DOWN: {
+
+                case Component3D._TOUCH_DOWN:
                     state = "active";
-                    var actionEvent = document.createEvent("CustomEvent");
-                    actionEvent.initCustomEvent("action", true, true, null);
+                    actionEvent = document.createEvent("CustomEvent");
+                    actionEvent.initCustomEvent("action", true, true, {
+                        glTFElement: glTFElement,
+                        action: "touchDown"
+                    });
                     this.dispatchEvent(actionEvent);
-                }
                     break;
-                case this._TOUCH_UP:
+
+                case Component3D._TOUCH_UP:
                     state = this.__STYLE_DEFAULT__; //this is probably wrong - what happens if hover is on going too ?
+                    var className = Montage.getInfoForObject(this).objectName;
+                    if (className === "Material") {
+                        actionEvent = document.createEvent("CustomEvent");
+                        actionEvent.initCustomEvent("action", true, true, {
+                            glTFElement: glTFElement,
+                            action: "touchUp"
+                        });
+                        this.dispatchEvent(actionEvent);
+                    }
+
                     break;
             }
 
             if (state !== this._state) {
                 this._state = state;
-                this._executeCurrentStyle(state);
+                this._executeStylesForState(state);
             }
         }
     },
@@ -800,5 +1040,14 @@ exports.Component3D = Target.specialize( {
     blueprintModuleId:require("montage")._blueprintModuleIdDescriptor,
 
     blueprint:require("montage")._blueprintDescriptor
+
+}, {
+    _ENTER: { value: "COMPONENT_ENTER"},
+
+    _EXIT: { value: "COMPONENT_EXIT"},
+
+    _TOUCH_DOWN: { value: "_TOUCH_DOWN"},
+
+    _TOUCH_UP: { value: "_TOUCH_UP"},
 
 });

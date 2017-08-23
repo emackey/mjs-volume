@@ -30,7 +30,9 @@ exports.MeshResourceLoader = Object.create(ResourceLoader, {
     fireMeshesDidLoadIfNeeded: {
         value: function() {
 
-            var ids = Object.keys(this._trackedIds);
+            var ids = this._trackedIds 
+                ? Object.keys(this._trackedIds)
+                : null;
             if (ids) {
                 if (ids.length == 0) {
                     if (this.delegate) {

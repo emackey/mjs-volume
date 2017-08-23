@@ -82,8 +82,8 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
 
     handleImage: {
         value: function(entryID, description, userInfo) {
-            var imagePath = description.path;
-            var imageResource = Object.create(ResourceDescription).init(imagePath, { "path": imagePath });
+            var imageURI = description.uri;
+            var imageResource = Object.create(ResourceDescription).init(imageURI, { "uri": imageURI });
             imageResource.type = "image";
             this.storeEntry(entryID, imageResource, description);
             return true;
@@ -92,8 +92,8 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
 
     handleVideo: {
         value: function(entryID, description, userInfo) {
-            var videoPath = description.path;
-            var videoResource = Object.create(ResourceDescription).init(videoPath, { "path": videoPath });
+            var videoURI = description.uri;
+            var videoResource = Object.create(ResourceDescription).init(videoURI, { "uri": videoURI });
             videoResource.type = "video";
             this.storeEntry(entryID, videoResource, description);
             return true;
@@ -168,8 +168,8 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
                         parameter.value = values[parameterSid];
                         var paramValue = null;
                         switch (parameter.type) {
-                            case WebGLRenderingContext.SAMPLER_CUBE:
-                            case WebGLRenderingContext.SAMPLER_2D:
+                            case WebGLRenderingContext.prototype.SAMPLER_CUBE:
+                            case WebGLRenderingContext.prototype.SAMPLER_2D:
                             {
                                 var entry = this.getEntry(parameter.value);
                                 if (entry) {
@@ -253,7 +253,7 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
             for (var i = 0 ; i < primitivesDescription.length ; i++) {
                 var primitiveDescription = primitivesDescription[i];
 
-                if (primitiveDescription.primitive === WebGLRenderingContext.TRIANGLES) {
+                if (primitiveDescription.primitive === WebGLRenderingContext.prototype.TRIANGLES) {
                     var primitive = Object.create(Primitive).init();
 
                     //read material
@@ -269,24 +269,16 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
                         var attributeID = attributes[semantic];
                         var attributeEntry = this.getEntry(attributeID);
 
-                        //if (!isCompressedMesh) {
-                            primitive.addVertexAttribute( { "semantic" :  semantic,
+                            primitive.addVertexAttribute( { 
+                                "semantic" :  semantic,
                                 "attribute" : attributeEntry.entry });
-                        //} else {
-                        //    primitive.addVertexAttribute( { "semantic" :  semantic,
-                        //        "attribute" : attributeID });
-                        //}
 
                     }, this);
 
                     //set indices
                     var indicesID = primitiveDescription.indices;
                     var indicesEntry = this.getEntry(indicesID);
-                    //if (!isCompressedMesh) {
                         primitive.indices = indicesEntry.entry;
-                    //} else {
-                    //    primitive.indices = indicesID;
-                    //}
                 }
             }
             return true;
@@ -367,15 +359,15 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
                         var nodeEntry = this.getEntry(skeleton);
                         if (nodeEntry) {
                             var rootSkeleton = nodeEntry.entry;
-                            var jointsIds = skin.jointsIds;
+                            var jointNames = skin.jointNames;
                             var joints = [];
 
-                            jointsIds.forEach(function(jointId) {
-                                var joint = rootSkeleton.nodeWithJointID(jointId);
+                            jointNames.forEach(function(jointName) {
+                                var joint = rootSkeleton.nodeWithJointID(jointName);
                                 if (joint) {
                                     joints.push(joint);
                                 } else {
-                                    console.log("WARNING: jointId:"+jointId+" cannot be found in skeleton:"+skeleton);
+                                    console.log("WARNING: jointName:"+jointName+" cannot be found in skeleton:"+skeleton);
                                 }
                             }, this);
 
@@ -384,13 +376,13 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
                     }, this);
 
                     var meshSources = [];
-                    node.instanceSkin.sources.forEach(function(source) {
+                    node.instanceSkin.meshes.forEach(function(source) {
                         var sourceEntry = this.getEntry(source);
                         if (sourceEntry) {
                             meshSources.push(sourceEntry.entry);
                         }
                     }, this);
-                    skin.sources = meshSources;
+                    skin.meshes = meshSources;
 
                 }
             }
@@ -416,7 +408,7 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
                 return false;
             }
 
-            var scene = Object.create(glTFScene).init();
+            var scene = new glTFScene().init();
             scene.ids = this._ids;
             scene.id = entryID;
             scene.name = description.name;
@@ -446,10 +438,11 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
         value: function(entryID, description, userInfo) {
             var skin = Object.create(Skin).init();
             skin.bindShapeMatrix = mat4.create(description.bindShapeMatrix);
-            skin.jointsIds = description.joints;
+            skin.jointNames = description.jointNames;
             skin.inverseBindMatricesDescription = description.inverseBindMatrices;
             skin.inverseBindMatricesDescription.id = entryID + "_inverseBindMatrices";
-            skin.inverseBindMatricesDescription.bufferView = this.getEntry(skin.inverseBindMatricesDescription.bufferView).entry;
+            var entry = this.getEntry(skin.inverseBindMatricesDescription).entry;
+            skin.inverseBindMatricesDescription = entry;
             this.storeEntry(entryID, skin, description);
         }
     },
@@ -461,7 +454,7 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
 
             var node = Object.create(glTFNode).init();
             node.id = entryID;
-            node.jointId = description.jointId;
+            node.jointName = description.jointName;
             node.name = description.name;
 
             this.storeEntry(entryID, node, description);
@@ -491,7 +484,7 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
             if (description.instanceSkin) {
                 description.instanceSkin.skin = this.getEntry(description.instanceSkin.skin).entry;
                 node.instanceSkin = description.instanceSkin;
-                var sources = node.instanceSkin.sources;
+                var sources = node.instanceSkin.meshes;
                 if (sources) {
                     sources.forEach( function(meshID) {
                         meshEntry = this.getEntry(meshID);
@@ -552,25 +545,38 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
             var parameters = {};
             Object.keys(description.parameters).forEach( function(parameterSID) {
                 var parameterUID = description.parameters[parameterSID];
-                parameterDescription = this.getEntry(parameterUID).entry;
+                parameterDescription = typeof parameterUID === "string" 
+                    ? this.getEntry(parameterUID).entry 
+                    : parameterUID;
                 //we can avoid code below if we add byteStride
                 switch (parameterDescription.type) {
-                    case WebGLRenderingContext.FLOAT_VEC4:
-                        componentsPerAttribute = 4;
-                        break;
-                    case WebGLRenderingContext.FLOAT_VEC3:
-                        componentsPerAttribute = 3;
-                        break;
-                    case WebGLRenderingContext.FLOAT_VEC2:
-                        componentsPerAttribute = 2;
-                        break;
-                    case WebGLRenderingContext.FLOAT:
+                    case "SCALAR":
+                    case "FLOAT":
                         componentsPerAttribute = 1;
                         break;
-                    default: {
-                        console.log("type:"+parameterDescription.type+" byteStride not handled");
+                    case "VEC2":
+                    case "FLOAT_VEC2":
+                        componentsPerAttribute = 2;
                         break;
-                    }
+                    case "VEC3":
+                    case "FLOAT_VEC3":
+                        componentsPerAttribute = 3;
+                        break;
+                    case "VEC4":
+                    case "MAT2":
+                    case "FLOAT_VEC4":
+                        componentsPerAttribute = 4;
+                        break;
+                    case "MAT3":
+                        componentsPerAttribute = 9;
+                        break;
+                    case "MAT4":
+                        componentsPerAttribute = 16;
+                        break;
+                    default:
+                        componentsPerAttribute = 0;
+                        console.log("handleAnimation - unknown type:" + parameterDescription.type);
+                        break;
                 }
 
                 if (parameterDescription.extensions) {
@@ -580,8 +586,11 @@ exports.RuntimeTFLoader = Object.create(glTFParser, {
                         if (compressionObject) {
                             var compressedData = compressionObject["compressedData"];
                             if (compressedData) {
-                                compressedData.bufferView = this.getEntry(compressedData.bufferView).entry;
-                                compressedData.id = entryID + parameterSID + "_compressedData";
+                                //we may have already set this bufferView for shared accessors
+                                if (typeof compressedData.bufferView !== "object") {
+                                    compressedData.bufferView = this.getEntry(compressedData.bufferView).entry;
+                                    compressedData.id = entryID + parameterSID + "_compressedData";
+                                }
                             }
                         }
                     }

@@ -1,15 +1,28 @@
 {
-    "name":"mjs-volume",
-    "version":"0.1.0",
-    "dependencies": {
-        "montage": "0.13.7",
-        "digit": "0.3.1",
-        "matte": "0.1.1",
-        "q" : "0.9.6",
-        "collections": "~0.2.1"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/fabrobinet/mjs-volume.git"
-    }
+  "name": "mjs-volume",
+  "description": "MontageJS 3D components",
+  "version": "0.2.0",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/montagestudio/mjs-volume.git"
+  },
+  "dependencies": {
+    "collections": "^5.0.6",
+    "cssom": "https://github.com/montagejs/cssom.git#gh-pages",
+    "digit": "^3.0.0",
+    "matte": "^0.3.0",
+    "montage": "^17.0.8",
+    "native": "^0.3.0",
+    "q": "0.9.6",
+    "url": "0.7.9"
+  },
+  "devDependencies": {
+    "concurrently": "^3.4.0",
+    "http-server": "^0.9.0",
+    "open": "0.0.5"
+  },
+  "scripts": {
+    "start:demo": "concurrently \"http-server -a localhost -p 8085\" \"open http://localhost:8085/demo/index.html\""
+  }
 }

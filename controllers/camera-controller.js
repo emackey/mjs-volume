@@ -37,6 +37,84 @@ exports.CameraController = Montage.specialize( {
         }
     },
 
+    _scaleFactor: { value: .6 },
+
+    scaleFromEvent: {
+        value: function(event) {
+            return event.scale * this._scaleFactor;
+        }
+    },
+
+    _deltaForEvent: {
+        value: function(event) {
+            if (event.type == "wheel") {
+                return event.wheelDeltaY != null ? event.wheelDeltaY : -event.deltaY;
+            } else {
+                var scale = - (this._lastScale - this.scaleFromEvent(event));
+
+                var direction = vec3.create();
+                var eye = vec3.create(this.viewPoint.glTFElement.transform.translation);
+
+                var targetPosition;
+                var rootNode = this.node.glTFElement;
+                var sceneBBox =  this.sceneBBox;
+                targetPosition = [
+                    (sceneBBox[0][0] + sceneBBox[1][0]) / 2,
+                    (sceneBBox[0][1] + sceneBBox[1][1]) / 2,
+                    (sceneBBox[0][2] + sceneBBox[1][2]) / 2];
+
+                var distVec = vec3.create();
+
+                distVec[0] = targetPosition[0] - eye[0];
+                distVec[1] = targetPosition[1] - eye[1];
+                distVec[2] = targetPosition[2] - eye[2];
+                var distance = vec3.length(distVec);
+
+                return scale * distance * 7500;
+            }
+
+        }
+    },
+
+    _minimalDistance: { value: 0, writable: true},
+
+    _computeInitialDistance: {
+        value: function() {
+            if (this.sceneBBox) {
+                var sceneBBox =  this.sceneBBox;
+
+                //First we compute the sceneRadius
+                var sceneBBOXMidpoint = vec3.createFrom(   (sceneBBox[1][0] - sceneBBox[0][0]) / 2, 
+                                            (sceneBBox[1][1] - sceneBBox[0][1]) / 2, 
+                                            (sceneBBox[1][2] - sceneBBox[0][2]) / 2)
+                var sceneRadius = vec3.length(sceneBBOXMidpoint);
+
+                //Then we check what is the starting distance from the view point to center of the sceen
+                var targetPosition = [
+                    (sceneBBox[0][0] + sceneBBox[1][0]) / 2,
+                    (sceneBBox[0][1] + sceneBBox[1][1]) / 2,
+                    (sceneBBox[0][2] + sceneBBox[1][2]) / 2];
+                var eye = vec3.create(this.viewPoint.glTFElement.transform.translation);
+                var direction = vec3.create();
+                direction[0] = targetPosition[0] - eye[0];
+                direction[1] = targetPosition[1] - eye[1];
+                direction[2] = targetPosition[2] - eye[2];
+
+                var initialDistance = vec3.length(direction);
+
+                this._minimalDistance = (initialDistance < sceneRadius) ? initialDistance : sceneRadius;
+
+                this.zoomStep = sceneRadius * 0.0001;
+            }            
+        }
+    },
+
+    viewPointDidChange: {
+        value: function() {
+            this._computeInitialDistance();
+        }
+    },
+
     _viewPoint: { value: null, writable: true},
 
     viewPoint: {
@@ -46,7 +124,7 @@ exports.CameraController = Montage.specialize( {
         set: function(value) {
             if (this._viewPoint != value) {
                 this._viewPoint = value;
-                this.zoomStep = 0;
+                this.viewPointDidChange();
             }
         }
     },
@@ -55,6 +133,17 @@ exports.CameraController = Montage.specialize( {
 
     zoomStep: { value: 0, writable: true },
 
+    sceneBBox: { value: null, writable: true},
+
+    nodeDidChange: {
+        value: function() {
+            var rootNode = this.node.glTFElement;
+            this.sceneBBox =  rootNode.getBoundingBox(true);
+
+            this._computeInitialDistance();
+        }
+    },
+
     node: {
         get: function() {
             return this._node;
@@ -62,7 +151,7 @@ exports.CameraController = Montage.specialize( {
         set: function(value) {
             if (this._node != value) {
                 this._node = value;
-                this.zoomStep = 0;
+                this.nodeDidChange();
             }
         }
     },
@@ -72,6 +161,22 @@ exports.CameraController = Montage.specialize( {
     _transform: { value: null, writable: true },
 
     _axisUp: { value: null, writable: true },
+
+    _lastScale: { value: 0 },
+
+    zoomStart: {
+        value: function(event) {
+            if (event.type != "wheel") {
+                this._lastScale = this.scaleFromEvent(event);
+            }
+        }
+    },
+
+    zoomEnd: {
+        value: function() {
+            this._lastScale = 0;
+        }
+    },
 
     zoom: {
         value: function(event) {
@@ -84,28 +189,45 @@ exports.CameraController = Montage.specialize( {
 
             var targetPosition;
             var rootNode = this.node.glTFElement;
-            var sceneBBox =  rootNode.getBoundingBox(true);
+            var sceneBBox =  this.sceneBBox;
             targetPosition = [
                 (sceneBBox[0][0] + sceneBBox[1][0]) / 2,
                 (sceneBBox[0][1] + sceneBBox[1][1]) / 2,
                 (sceneBBox[0][2] + sceneBBox[1][2]) / 2];
-
-            if (this.zoomStep == 0) {
-                var lg = vec3.createFrom(sceneBBox[1][0] - sceneBBox[0][0], sceneBBox[1][1] - sceneBBox[0][1], sceneBBox[1][2] - sceneBBox[0][2])
-                this.zoomStep = 0.0001 * vec3.length(lg);
-
-            }
-
+            
             direction[0] = targetPosition[0] - eye[0];
             direction[1] = targetPosition[1] - eye[1];
             direction[2] = targetPosition[2] - eye[2];
+
             vec3.normalize(direction);
 
-            eye[0] += this.zoomStep * direction[0] * event.wheelDeltaY;
-            eye[1] += this.zoomStep * direction[1] * event.wheelDeltaY;
-            eye[2] += this.zoomStep * direction[2] * event.wheelDeltaY;
+            var delta = this._deltaForEvent(event);
 
-            this.viewPoint.glTFElement.transform.translation = eye;
+            var wheelStep =  this.zoomStep * delta;
+
+            eye[0] += wheelStep * direction[0];
+            eye[1] += wheelStep * direction[1];
+            eye[2] += wheelStep * direction[2];
+
+            var distVec = vec3.create();
+
+            distVec[0] = targetPosition[0] - eye[0];
+            distVec[1] = targetPosition[1] - eye[1];
+            distVec[2] = targetPosition[2] - eye[2];
+            var distance = vec3.length(distVec);
+            if (distance > this._minimalDistance) {
+                this.viewPoint.glTFElement.transform.translation = eye;
+            } else {
+                var minimalDistance = (delta > 0) ? -this._minimalDistance : this._minimalDistance;
+
+                eye[0] = targetPosition[0] + direction[0] * minimalDistance;
+                eye[1] = targetPosition[1] + direction[1] * minimalDistance;
+                eye[2] = targetPosition[2] + direction[2] * minimalDistance;
+
+                this.viewPoint.glTFElement.transform.translation = eye;
+            }
+
+            this._lastScale = this.scaleFromEvent(event);
         }
     },
 
@@ -132,7 +254,7 @@ exports.CameraController = Montage.specialize( {
             var targetPosition;
             if (hasTarget == false) {
                 var rootNode = this.node.glTFElement;
-                var sceneBBox =  rootNode.getBoundingBox(true);
+                var sceneBBox =  this.sceneBBox;
                 targetPosition = [
                     (sceneBBox[0][0] + sceneBBox[1][0]) / 2,
                     (sceneBBox[0][1] + sceneBBox[1][1]) / 2,

@@ -12,10 +12,10 @@
     },
     "shaders": {
         "technique1FS": {
-            "path": "pickingFS.glsl"
+            "uri": "pickingFS.glsl"
         },
         "technique1VS": {
-            "path": "pickingVS.glsl"
+            "uri": "pickingVS.glsl"
         }
     },
     "techniques": {

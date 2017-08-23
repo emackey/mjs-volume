@@ -88,8 +88,8 @@ exports.Technique = Object.create(Base, {
 
     execute: {
         value: function(webGLRenderer, time, options) {
-            webGLRenderer.resetStates();
             this.rootPass.execute(webGLRenderer, time, options);
+            webGLRenderer.resetStates();
         }
     }
 

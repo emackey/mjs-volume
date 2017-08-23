@@ -321,9 +321,9 @@ exports.Utilities = Object.create(Object.prototype, {
             var AXIS_ANGLE_INTERP = 0;
             var AXIS_ANGLE_INTERP_NAIVE = 1;
             var QUATERNION = 2;
-            var interpolationType = QUATERNION;//AXIS_ANGLE_INTERP_NAIVE;
-            var axisAngle1 = vec4.createFrom(from[0],from[1],from[2],from[3]);
-            var axisAngle2 = vec4.createFrom(to[0],to[1],to[2],to[3]);
+            var interpolationType = AXIS_ANGLE_INTERP_NAIVE;
+            var axisAngle1 = from;//vec4.createFrom(from[0],from[1],from[2],from[3]);
+            var axisAngle2 = to;//vec4.createFrom(to[0],to[1],to[2],to[3]);
             if (interpolationType == AXIS_ANGLE_INTERP) {
                 vec3.normalize(axisAngle1); //FIXME: do that upfront
                 vec3.normalize(axisAngle2);
@@ -461,6 +461,20 @@ exports.Utilities = Object.create(Object.prototype, {
             }
 
             if (rotation != null) {
+
+rotation[0] = 0.5 * Math.sqrt(Math.max(1 + rows[0][0] - rows[1][1] - rows[2][2], 0));
+rotation[1] = 0.5 * Math.sqrt(Math.max(1 - rows[0][0] + rows[1][1] - rows[2][2], 0));
+rotation[2] = 0.5 * Math.sqrt(Math.max(1 - rows[0][0] - rows[1][1] + rows[2][2], 0));
+rotation[3] = 0.5 * Math.sqrt(Math.max(1 + rows[0][0] + rows[1][1] + rows[2][2], 0));
+
+if (rows[2][1] > rows[1][2])
+    rotation[0] = -rotation[0]
+if (rows[0][2] > rows[2][0])
+    rotation[1] = -rotation[1]
+if (rows[1][0] > rows[0][1])
+    rotation[2] = -rotation[2]
+
+/*
                 var amat3 = mat3.create();
                 amat3[0] = rows[0][0];
                 amat3[1] = rows[1][0];
@@ -473,50 +487,8 @@ exports.Utilities = Object.create(Object.prototype, {
                 amat3[8] = rows[2][2];
                 mat3.transpose(amat3);
                 quat4.fromRotationMatrix(amat3, rotation);
-                quat4.normalize(rotation);
+                quat4.normalize(rotation);*/
             }
-        }
-    },
-
-    easeOut: {
-        value: function(x) {
-            //actually, just ease out
-            var t = x;
-            var start = 0;
-            var end = 1;
-
-            t--;
-            y =  end*(t * t * t + 1.) + start - 1.;
-            y = -y;
-            y = 1 - y;
-            return y;
-
-            /*
-             t *= 2;
-             var y;
-             if (t < 1.) {
-             y = end/2. * t * t + start - 1.;
-
-             } else {
-
-             t--;
-             y= -end/2. * (t*(t-2) - 1) + start - 1.;
-             }
-             y = -y;
-
-             y = 1 - y;
-             return y;
-             */
-            /*
-             t *= 2.;
-             if (t < 1.)  {
-             y = end/2 * t * t * t + start - 1.;
-             } else {
-             t -= 2;
-             y = end/2*(t * t * t + 2) + start - 1.;
-             }
-             */
-            //return y;
         }
     }
 

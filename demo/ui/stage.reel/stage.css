@@ -1,0 +1,7 @@
+.Stage {
+    display: -webkit-box;
+    display: -ms-flex;
+    display: flex;
+    width: 100wh;
+    height: 100vh;
+}

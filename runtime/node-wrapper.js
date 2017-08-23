@@ -94,6 +94,18 @@ exports.NodeWrapper = Object.create(Object.prototype, {
         }
     },
 
+    viewMatrix: {
+        get: function() {
+            return this._transformHelper.viewMatrix;
+        }
+    },
+
+    worldViewInverseMatrix: {
+        get: function() {
+            return this._transformHelper.worldViewInverseMatrix;
+        }
+    },
+
     worldViewInverseTransposeMatrix: {
         get: function() {
             return this._transformHelper.worldViewInverseTransposeMatrix;

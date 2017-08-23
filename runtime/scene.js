@@ -23,11 +23,13 @@
 
 var Montage = require("montage").Montage;
 var Node = require("runtime/node").Node;
+var UUID = require("montage/core/uuid");
 var RuntimeTFLoader = require("runtime/runtime-tf-loader").RuntimeTFLoader;
-var URL = require("montage/core/url");
+var URL = require("url");
 var SceneResourceLoader = require("runtime/scene-resource-loader").SceneResourceLoader;
 var Q = require("q");
 var Target = require("montage/core/target").Target;
+var CSSOM = require("cssom");
 
 exports.Scene = Target.specialize( {
 
@@ -39,13 +41,26 @@ exports.Scene = Target.specialize( {
 
     _resourcesLoaded: { value: false, writable: true },
 
+    _glTFElement: { value: null, writable: true },
+
+    shouldBeHitTested: { value: false, writable: true },
+
+    glTFElement: {
+        get: function() {
+            return this._glTFElement;
+        },
+        set: function(value) {
+            this._glTFElement = value;
+        }
+    },
+
     _rootNode: { value: null, writable: true },
 
     rootNode: {
         get: function() {
             if (this.status === "loaded") {
                 if (this._rootNode == null) {
-                    this._rootNode = Montage.create(Node);
+                    this._rootNode = new Node();
                     this._rootNode.scene = this;
                     this._rootNode.id = this.glTFElement.rootNode.id;
                 }
@@ -75,44 +90,156 @@ exports.Scene = Target.specialize( {
         }
     },
 
-    status: { value: 0, writable:true},
+    status: { value: 0, writable: true},
+
+    styleSheetsLoaded: { value: false, writable: true},
+
+    styleSheets: { value: null, writable: true},
+
+    loadCSSStyles: {
+        value: function() {
+            if (document.styleSheets == null)
+                return;
+            var packages = Object.keys(require.packages);
+            var styleSheetsLoaded = 0;
+            var styleSheetsCount = document.styleSheets.length;
+            var i;
+            var styleSheet;
+            var styleSheets = [];
+            this.styleSheets = {};
+            
+            for (i = 0; i < styleSheetsCount; i++) {    
+                styleSheet = document.styleSheets[i]; 
+                if (styleSheet.href != null) {
+                    if (styleSheet.href.indexOf(packages[0]) != -1) {
+                        //HACK: packages[0] is guaranted to be the entry point
+                         //we just want the CSS from this project but not the ones from its dependencies
+                        if (styleSheet.href.indexOf(packages[0] + "node_modules") == -1) {
+                            styleSheets.push(styleSheet);
+                        }
+                    }
+                } else {
+                    // Gets a style node and its content within the current document.
+                    if (styleSheet.ownerNode && styleSheet.ownerNode.innerText) {
+                        this._addStyleSheets(styleSheet.ownerNode.innerText);
+                    }
+                }
+            }
+
+            styleSheetsCount = styleSheets.length;
+
+            if (styleSheetsCount === 0) {
+                this.styleSheetsLoaded = true;
+                return;
+            }
+
+            styleSheets.forEach(function (styleSheet) {
+                var self = this;
+                //FIXME: handle error
+                var cssPath = styleSheet.href;
+                var cssXHR = new XMLHttpRequest();
+                cssXHR.open("GET", cssPath, true);
+                cssXHR.onreadystatechange = function () {
+                    if (cssXHR.readyState == 4) {
+                        if (cssXHR.status == 200) {
+                            self._addStyleSheets(cssXHR.responseText, styleSheet.href);
+                            styleSheetsLoaded++;
+
+                            if (styleSheetsLoaded === styleSheetsCount) {
+                                self.dispatchEventNamed("styleSheetsDidLoad", true, false, self);
+                            }
+                        }
+                    }
+                };
+
+                cssXHR.send(null);
+            }, this);
+
+            return false;
+        }
+    },
+
+    _addStyleSheets: {
+        value: function (styleSheetContent, styleSheetID) {
+            if (!styleSheetID) {
+                styleSheetID = UUID.generate();
+            }
+
+            this.styleSheets[styleSheetID] = CSSOM.parse(styleSheetContent);
+        }
+    },
+
+    deserializedFromTemplate: {
+        value: function(owner, label, documentPart) {
+            this._ownerDocumentPart = documentPart;
+        }
+    },
+
+    _pendingLoading: { value: false },
+
+    _loadScene: {
+        value: function() {
+            var self = this;
+            var readerDelegate = {};
+            readerDelegate.loadCompleted = function (scene) {
+                this.totalBufferSize =  loader.totalBufferSize;
+                this.glTFElement = scene;
+                this.status = "loaded";
+                console.log("scene loaded:"+this._path);
+            }.bind(this);
+
+            if (this._path != null) {
+                var absolutePath = this._path;
+                var URLObject = URL.parse(absolutePath);
+                if (absolutePath[0] === '/') {
+                    absolutePath = absolutePath.substr(1);
+                    //HACK: packages[0] is guaranted to be the entry point
+                    absolutePath = URL.resolve(require.packages[0], absolutePath);
+                } else if (!URLObject.scheme) {
+                    if (this._ownerDocumentPart == null) 
+                        return;
+                    var rebase = this._ownerDocumentPart.template.getBaseUrl();
+                    absolutePath = URL.resolve(rebase, absolutePath);
+                }
+
+                var loader = Object.create(RuntimeTFLoader);
+                this.status = "loading";
+                loader.initWithPath(absolutePath);
+                loader.delegate = readerDelegate;
+                loader.load(null /* userInfo */, null /* options */);
+            }
+
+            if (this._pendingLoading == true) {
+                this.removePathChangeListener("_ownerDocumentPart", this);
+                this._pendingLoading = false;
+            }
+        }
+    },
 
     path: {
         set: function(value) {
             //Work-around until montage implements textfield that do not send continous input..
             if (value) {
-                if (value.indexOf(".json") === -1)
+                if ((value.indexOf(".gltf") === -1) && (value.indexOf(".json") === -1))
                     return;
-
-                var URLObject = URL.parse(value);
-                if (!URLObject.scheme) {
-                    var packages = Object.keys(require.packages);
-                    //HACK: for demo, packages[0] is guaranted to be the entry point
-                    value = URL.resolve(packages[0], value);
-                }
             }
 
             if (value !== this._path) {
-                var self = this;
-                var readerDelegate = {};
-                readerDelegate.loadCompleted = function (scene) {
-                    this.totalBufferSize =  loader.totalBufferSize;
-                    this.glTFElement = scene;
-                    this.status = "loaded";
-                    console.log("scene loaded:"+this._path);
-                }.bind(this);
-
-                if (value) {
-                    var loader = Object.create(RuntimeTFLoader);
-                    this.status = "loading";
-                    loader.initWithPath(value);
-                    loader.delegate = readerDelegate;
-                    loader.load(null /* userInfo */, null /* options */);
-                } else {
-                    this.scene = null;
-                }
-
                 this._path = value;
+                if (value == null) {
+                    this.scene = null;
+                } else {
+                    var isAbsolute  = (value.length > 0) &&  value[0] === '/';
+                    if ((isAbsolute == false) && this._ownerDocumentPart == null) {
+                        //FIXME:we should queue
+                        if (this._pendingLoading == false) {
+                            this.addPathChangeListener("_ownerDocumentPart", this, "_loadScene");
+                            this._pendingLoading = true;
+                        }
+                    } else {
+                        this._loadScene();
+                    }
+                }
             }
         },
 
@@ -138,18 +265,6 @@ exports.Scene = Target.specialize( {
         }
     },
 
-    _styleSheets: { value: null,  writable: true },
-
-    styleSheets: {
-        get: function() {
-            return this._styleSheets;
-        },
-
-        set: function(value) {
-            this._styleSheets = value;
-        }
-    },
-
     init: {
         value:function(glTFElement) {
             if (glTFElement) {
@@ -158,6 +273,10 @@ exports.Scene = Target.specialize( {
             }
             return this;
         }
-    }
+    },
+
+    blueprintModuleId:require("montage")._blueprintModuleIdDescriptor,
+
+    blueprint:require("montage")._blueprintDescriptor
 
 });

@@ -28,7 +28,76 @@ require("runtime/dependencies/gl-matrix");
 var GLSLProgram = require("runtime/glsl-program").GLSLProgram;
 var WebGLTFResourceManager = require("runtime/helpers/resource-manager").WebGLTFResourceManager;
 
-exports.WebGLRenderer = Object.create(Object.prototype, {
+var GL = WebGLRenderingContext.prototype;
+
+var WebGLRendererHelper = Object.create(Object.prototype, {
+
+    _statesFunctionsIndex: { value: null, writable: true },
+
+    allStatesFunctions: { value: ["blendColor", "blendEquationSeparate", "blendFuncSeparate", "colorMask", "cullFace", "depthFunc", "depthMask", "depthRange", "frontFace", "lineWidth", "polygonOffset",  "scissor"], writable: false },
+
+    
+    defaultFunctionsArgs: { 
+        value: {
+            "blendColor": [0.0, 0.0, 0.0, 0.0],
+            "blendEquationSeparate" : [GL.FUNC_ADD, GL.FUNC_ADD],
+            "blendFuncSeparate" : [GL.ONE, GL.ONE, GL.ZERO, GL.ZERO],
+            "colorMask" : [true, true, true, true], 
+            "cullFace" : [GL.BACK],
+            "depthFunc" : [GL.LESS],
+            "depthMask" : [true],
+            "depthRange" : [0.0, 1.0],
+            "frontFace" : [GL.CCW],
+            "lineWidth" : [1.0],
+            "polygonOffset" : [0.0, 0.0], 
+            "scissor" : [0, 0, 0, 0]
+        }, writable : false
+    },
+
+    allEnablableStates: { value: [GL.BLEND, GL.CULL_FACE, GL.DEPTH_TEST, GL.POLYGON_OFFSET_FILL, GL.SAMPLE_ALPHA_TO_COVERAGE, GL.SCISSOR_TEST], writable: false },
+
+    statesFunctionsIndex: { 
+        get: function() {
+            if (!this._statesFunctionsIndex) {
+                this._statesFunctionsIndex = {};
+                for (var i = 0 ; i < this.allStatesFunctions.length ; i++) {
+                    this._statesFunctionsIndex[this.allStatesFunctions[i]] = i;
+                }
+            }
+            return this._statesFunctionsIndex;
+        }
+    }
+});
+
+/*//FIXME:
+//http://stackoverflow.com/questions/7837456/comparing-two-arrays-in-javascript
+if (!Array.prototype.equals) {
+                // attach the .equals method to Array's prototype to call it on any array
+                Array.prototype.equ    _statesFunctionsIndex: { value: null, writable: true },
+als = function (array) {
+                    // if the other array is a falsy value, return
+                    if (!array)
+                        return false;
+                    if (this.length != array.length)
+                        return false;
+                    var l = this.length;
+                    for (var i = 0, l; i < l; i++) {
+                        // Check if we have nested arrays
+                        if (this[i] instanceof Array && array[i] instanceof Array) {
+                            // recurse into the nested arrays
+                            if (!this[i].equals(array[i]))
+                                return false;       
+                        } else if (this[i] != array[i]) { 
+                            // Warning - two different object instances will never be equal: {x:20} != {x:20}
+                            return false;   
+                        }              
+                    }       
+                    return true;
+                }   
+            }
+*/
+
+var WebGLRenderer = exports.WebGLRenderer = Object.create(Object.prototype, {
 
     MODEL: { value: "MODEL", writable: false},
     VIEW: { value: "VIEW", writable: false},
@@ -73,15 +142,12 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
 
     specularColor: { value: [1, 1, 1], writable: true },
 
-    GLContextDidChange: {
-        value: function(value) {
-        }
-    },
-
     initWithWebGLContext: {
         value: function(value) {
             this.webGLContext = value;
             this._states = {};
+            this._statesEnabled = {};
+            this._functionsArgs = {};
             return this;
         }
     },
@@ -136,14 +202,12 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
         }
     },
 
-
     webGLContext: {
         get: function() {
             return this._webGLContext;
         },
         set: function(value) {
             this._webGLContext = value;
-            this.GLContextDidChange();
         }
     },
 
@@ -354,34 +418,22 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
     vertexAttributeBufferDelegate: {
         value: {
 
-            _componentTypeForGLType: function(gl, glType) {
-                switch (glType) {
-                    case gl.FLOAT:
-                    case gl.FLOAT_VEC2:
-                    case gl.FLOAT_VEC3:
-                    case gl.FLOAT_VEC4:
-                        return gl.FLOAT;
-                    case gl.UNSIGNED_BYTE:
-                        return gl.UNSIGNED_BYTE;
-                    case gl.UNSIGNED_SHORT:
-                        return gl.UNSIGNED_SHORT;
-                    default:
-                        return null;
-                }
-            },
-
-            _componentsPerElementForGLType: function(gl, glType) {
-                switch (glType) {
-                    case gl.FLOAT:
-                    case gl.UNSIGNED_BYTE:
-                    case gl.UNSIGNED_SHORT:
+            //only performed once per vertexAttribute
+            _componentsPerElementForType: function(type) {
+                switch (type) {
+                    case "SCALAR":
                         return 1;
-                    case gl.FLOAT_VEC2:
+                    case "VEC2":
                         return 2;
-                    case gl.FLOAT_VEC3:
+                    case "VEC3":
                         return 3;
-                    case gl.FLOAT_VEC4:
+                    case "VEC4":
+                    case "MAT2":
                         return 4;
+                    case "MAT3":
+                        return 9;
+                    case "MAT4":
+                        return 16;
                     default:
                         return null;
                 }
@@ -404,8 +456,8 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
                 gl.bindBuffer(gl.ARRAY_BUFFER, glResource);
                 //FIXME: use bufferSubData to prevent alloc
                 gl.bufferData(gl.ARRAY_BUFFER, resource, gl.STATIC_DRAW);
-                glResource.componentType = this._componentTypeForGLType(gl, attribute.type);
-                glResource.componentsPerAttribute = this._componentsPerElementForGLType(gl, attribute.type);
+                glResource.componentType = attribute.componentType;
+                glResource.componentsPerAttribute = this._componentsPerElementForType(attribute.type);
                 gl.bindBuffer(gl.ARRAY_BUFFER, previousBuffer);
                 return glResource;
             },
@@ -418,11 +470,11 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
     textureDelegate: {
         value: {
             getGLFilter: function(filter) {
-                return filter == null ? WebGLRenderingContext.LINEAR : filter;
+                return filter == null ? GL.LINEAR : filter;
             },
 
             getGLWrapMode: function(wrapMode) {
-                return wrapMode == null ? WebGLRenderingContext.REPEAT : wrapMode;
+                return wrapMode == null ? GL.REPEAT : wrapMode;
             },
 
             handleError: function(errorCode, info) {
@@ -450,7 +502,7 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
             },
 
             createTextureFromImageAndSampler: function(image, sampler, gl) {
-                var activeTexture = gl.getParameter(gl.ACTIVE_TEXTURE)
+                var activeTexture = gl.getParameter(gl.ACTIVE_TEXTURE);
                 var textureBinding = gl.getParameter(gl.TEXTURE_BINDING_2D);
                 gl.activeTexture(gl.TEXTURE0);
 
@@ -466,7 +518,6 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
                     (minFilter === gl.LINEAR_MIPMAP_LINEAR));
 
                 if (usesMipMaps ||  (wrapS === gl.REPEAT) || (wrapT === gl.REPEAT)) {
-
                     var width = parseInt(image.width);
                     var height = parseInt(image.height);
 
@@ -509,6 +560,7 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
                 */
 
                 //FIXME: use from input texture (target, format, internal format)
+                //gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
                 if (usesMipMaps) {
                     gl.generateMipmap(gl.TEXTURE_2D);
@@ -572,9 +624,7 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
 
     setState: {
         value: function(stateID, flag, force) {
-
             var gl = this.webGLContext;
-
             if ((this._states[stateID] != null) && (force != true)) {
                 if (this._states[stateID] === flag) {
                     return;
@@ -591,6 +641,165 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
         }
     },
 
+    updateEnabledStates: {
+        value: function(gl, statesEnabled, force) {
+            if (statesEnabled != null) {
+                var length = statesEnabled.length;
+                var stateID;
+                for (var i = 0; i < length; ++i) {
+                    stateID = statesEnabled[i];
+                    if ((this._statesEnabled[stateID] == false) || force) {
+                        this._statesEnabled[stateID] = true;
+                        gl.enable(stateID);
+                    }
+                }
+            }
+        }
+    },
+
+    _restoreDefaultEnabledStatesIfAbsent: {
+        value: function(gl, statesEnabled, force) {
+            if (statesEnabled == null) return;
+
+            var allEnablableStates = WebGLRendererHelper.allEnablableStates;
+            var length = allEnablableStates.length;
+            var stateID;
+            for (var i = 0 ; i < length; ++i) {
+                stateID = allEnablableStates[i];
+                if ((statesEnabled[stateID] == null) && 
+                    ((this._statesEnabled[stateID] == true) || (this._statesEnabled[stateID] == null))
+                     || force) {
+                    gl.disable(stateID);
+                    this._statesEnabled[stateID] = false;
+                }
+            }
+        }
+    },
+
+    _restoreDefaultEnabledStates: {
+        value: function(gl, statesEnabled, force) {
+            var allEnablableStates = WebGLRendererHelper.allEnablableStates;
+            var length = allEnablableStates.length;
+            var stateID;
+            for (var i = 0 ; i < length; ++i) {
+                stateID = allEnablableStates[i];
+                if (((this._statesEnabled[stateID] != null) && 
+                    (this._statesEnabled[stateID] == true))
+                     || force) {
+                    gl.disable(stateID);
+                    this._statesEnabled[stateID] = false;
+                }
+            }
+        }
+    },
+
+    _restoreDefaultFunctionsArgsIfAbsent: {
+        value: function(gl, functions, force) {
+            if (functions == null) return;
+            var allStatesFunctions = WebGLRendererHelper.allStatesFunctions;
+            var statesFunctionsIndex = WebGLRendererHelper.statesFunctionsIndex;
+            var length = allStatesFunctions.length;
+            for (var i =  0 ; i < length ; i++) {
+                var func = allStatesFunctions[i];
+                var functionIndex = statesFunctionsIndex[func];
+
+                //if the function is not contained within "functions" it means we won't invoke it
+                //so we want to make sure its arguments are set to the default value
+                if (!functions[functionIndex]) {
+                    var args = this._functionsArgs[func];
+                    if (args) {
+                        var defaultArgs = WebGLRendererHelper.defaultFunctionsArgs[func];
+                        if (defaultArgs) {
+                            if (defaultArgs.length != args.length) {
+                                console.log("_restoreDefaultFunctionsArgsIfAbsent:inconsistent arguments length");
+                            } else {
+                                var needsUpdate = false | force;
+                                for (var k = 0 ; k < length ; k++) {
+                                    if (defaultArgs[k] != args[k]) {
+                                        needsUpdate = true;
+                                        args[k] = defaultArgs[k];
+                                    }
+                                }
+                                if (needsUpdate) {
+                                    this._functionsSwitch[functionIndex](gl, defaultArgs);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+
+    _restoreDefaultFunctionsArgs: {
+        value: function(gl, force) {
+            var statesFunctionsIndex = WebGLRendererHelper.statesFunctionsIndex;
+
+            for (var func in this._functionsArgs) {
+                var args = this._functionsArgs[func];
+                var defaultArgs = WebGLRendererHelper.defaultFunctionsArgs[func];
+                var length = args.length;
+                var needsUpdate = true;
+                var forcing = (force != null) && (force != true);
+                if (forcing) {
+                    for (var k = 0 ; k < length ; k++) {
+                        if (defaultArgs[k] != args[k]) {
+                            needsUpdate = true;
+                            args[k] = defaultArgs[k];
+                        }
+                    }
+                }
+                if (needsUpdate || forcing) {
+                    var functionIndex = statesFunctionsIndex[func];
+                    if (defaultArgs)
+                        this._functionsSwitch[functionIndex](gl, defaultArgs);
+                }
+            }
+        }
+    },
+
+    updateFunctionsStates: {
+        value: function(gl, functions) {
+            if (functions) {
+                var func;
+                var args;
+                var argsLength;
+                var previousArgs;
+                var statesFunctionsIndex = WebGLRendererHelper.statesFunctionsIndex;
+                var needsUpdate = false;
+                var i;
+
+                if (!functions) return;
+
+                for (func in functions) {
+                    args = functions[func];
+                    argsLength = args.length;
+                    previousArgs = this._functionsArgs[func];
+                    if (previousArgs == null) {
+                        needsUpdate = true;
+                    } else {
+                        for (i = 0 ; i < argsLength ; i++) {
+                            if (args[i] != previousArgs[i]) {
+                                needsUpdate = true;
+                                previousArgs[i] = args[i];
+                            }
+                        }
+                    }
+                    if (needsUpdate) {
+                        this._functionsSwitch[statesFunctionsIndex[func]](gl, args);
+                        if (previousArgs == null) {
+                            var nvArgs = [];
+                            this._functionsArgs[func] = nvArgs;
+                            for (i = 0 ; i < argsLength ; i++) {
+                                nvArgs.push(args[i]);
+                            }
+                        } 
+                    }
+                }
+            }
+        }
+    },
+
     resetStates : {
         value: function() {
             var gl = this.webGLContext;
@@ -601,15 +810,84 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
             }
             this._lastMaxEnabledArray = -1;
             this.bindedProgram = null;
-            this.setState(gl.BLEND, false);
+        }
+    },
+
+    _statesFunctionsIndex: { 
+        get: function() {
+            return WebGLRendererHelper.statesFunctionsIndex;
+        }
+    },
+
+    _functionsSwitch: {
+        value: (function () {
+            var functionsSwitch = [];
+            var statesFunctionsIndex = WebGLRendererHelper.statesFunctionsIndex;
+            functionsSwitch[statesFunctionsIndex["blendColor"]] = function blendColor(GL, args) {
+                GL.blendColor(args[0], args[1], args[2], args[3]);
+            };
+            functionsSwitch[statesFunctionsIndex["blendEquationSeparate"]] = function blendEquationSeparate(GL, args) {
+                GL.blendEquationSeparate(args[0], args[1]);
+            };
+            functionsSwitch[statesFunctionsIndex["blendFuncSeparate"]] = function blendFuncSeparate(GL, args) {
+                GL.blendFuncSeparate(args[0], args[1], args[2], args[3]);
+            };
+            functionsSwitch[statesFunctionsIndex["colorMask"]] = function colorMask(GL, args) {
+                GL.colorMask(args[0], args[1], args[2], args[3]);
+            };
+            functionsSwitch[statesFunctionsIndex["cullFace"]] = function cullFace(GL, args) {
+                GL.cullFace(args[0]);
+            };
+            functionsSwitch[statesFunctionsIndex["depthFunc"]] = function depthFunc(GL, args) {
+                GL.depthFunc(args[0]);
+            };
+            functionsSwitch[statesFunctionsIndex["depthMask"]] = function depthMask(GL, args) {
+                GL.depthMask(args[0]);
+            };
+            functionsSwitch[statesFunctionsIndex["depthRange"]] = function depthRange(GL, args) {
+                GL.depthRange(args[0], args[1]);
+            };
+            functionsSwitch[statesFunctionsIndex["frontFace"]] = function frontFace(GL, args) {
+                GL.frontFace(args[0]);
+            };
+            functionsSwitch[statesFunctionsIndex["lineWidth"]] = function lineWidth(GL, args) {
+                GL.lineWidth(args[0]);
+            };
+            functionsSwitch[statesFunctionsIndex["polygonOffset"]] = function polygonOffset(GL, args) {
+                GL.polygonOffset(args[0], args[1]);
+            };
+            functionsSwitch[statesFunctionsIndex["scissor"]] = function scissor(GL, args) {
+                GL.scissor(args[0], args[1], args[2], args[3]);
+            };
+            return functionsSwitch;
+        })()
+    },
+
+    _statesEnabled: { value: null, writable: true },
+
+    _functionsArgs: { value: null, writable: true },
+
+    _restoreDefaultGLStates: {
+        value: function(gl) {
+            this._restoreDefaultEnabledStates(gl, true);
+            this._restoreDefaultFunctionsArgs(gl, true);
         }
     },
 
     renderPrimitive: {
         value: function(primitiveDescription, pass, time, parameters) {
+            
             var renderVertices = false;
             var value = null;
             var primitive = primitiveDescription.primitive;
+
+            //temporary fix 
+            if (primitiveDescription.node) {
+                if (primitiveDescription.node.instanceSkin) {
+                    primitiveDescription.node.instanceSkin.skin.process(primitiveDescription.node, this.resourceManager);
+                }
+            }
+
             var newMaxEnabledArray = -1;
             var gl = this.webGLContext;
             var program =  this.bindedProgram;
@@ -626,19 +904,26 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
                 parameter = parameters[parameter];
                 if (parameter) {
                     if (parameter.semantic != null) {
+                        var nodeWrapper = primitiveDescription.nodeWrapper;
+                        if (parameter.source) {
+                            nodeWrapper = primitiveDescription.nodeWrapper.scenePassRenderer._nodeWrappers[parameter.source.id]
+                        }
+
                         var semantic = parameter.semantic;
                         if (semantic === this.PROJECTION) {
                             value = this.projectionMatrix;
                         } else if (semantic === this.MODELVIEW) {
-                            value = primitiveDescription.nodeWrapper.worldViewMatrix;
+                            value = nodeWrapper.worldViewMatrix;
                         } else if (semantic === this.MODELVIEWINVERSETRANSPOSE) {
-                            value = primitiveDescription.nodeWrapper.worldViewInverseTransposeMatrix;
+                            value = nodeWrapper.worldViewInverseTransposeMatrix;
+                        } else if (semantic === this.MODELVIEWINVERSE) {
+                            value = nodeWrapper.worldViewInverseMatrix;
                         }
                     }
                 }
 
                 if ((value == null) && parameter != null) {
-                    if (parameter.source) {
+                    if ((parameter.source) && (semantic == null)) {
                         var nodeWrapper = primitiveDescription.nodeWrapper.scenePassRenderer._nodeWrappers[parameter.source.id];
                         value = nodeWrapper.worldViewMatrix;
                     } else {
@@ -717,7 +1002,7 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
                 if (glResource) {
                     gl.bindBuffer(gl.ARRAY_BUFFER, glResource);
                     var attributeLocation = program.getLocationForSymbol(symbol);
-                    if (typeof attributeLocation !== "undefined") {
+                    if (attributeLocation != null) {
                         if (attributeLocation > newMaxEnabledArray) {
                             newMaxEnabledArray = attributeLocation;
                         }
@@ -769,6 +1054,94 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
             }
             this._lastMaxEnabledArray = newMaxEnabledArray;
             return available;
+        }
+    },
+
+    renderPrimitivesWithPass: {
+        value: function(primitives, pass, parameters, time, pickingMode) {
+            var count = primitives.length;
+            var gl = this.webGLContext;
+            if (pass.instanceProgram) {
+                var i;
+                var ctx = gl;
+                var glProgram = this.resourceManager.getResource(pass.instanceProgram.program, this.programDelegate, ctx);
+                if (glProgram) {
+                    var states = pass.states;
+                    this._restoreDefaultEnabledStatesIfAbsent(gl, states.enable);
+                    this._restoreDefaultFunctionsArgsIfAbsent(gl, states.functions);
+
+                    this.updateEnabledStates(gl, states.enable);
+                    this.updateFunctionsStates(gl, states.functions);
+
+                    this.bindedProgram = glProgram;
+
+                    //FIXME
+                    gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+                    gl.bindTexture(gl.TEXTURE_2D, null);
+
+                    var isPickingPass = (pass.id === "__PickingPass");
+                    if (isPickingPass) {
+                        for (var i = 0 ; i < count ; i++) {
+                            var primitive = primitives[i];
+                            if (primitive.node.hidden)
+                                continue;
+                            if (!primitive.pickingColor) {
+                                
+                                if (pickingMode === "node") {
+                                    var nodeID = primitive.node.baseId; //FIXME
+                                    if (nodeID) {
+                                        //FIXME move this into the picking technique when we have it..
+                                        //for picking, we need to associate a color to each node.
+                                        var nodePickingColor = pass.extras.nodeIDToColor[nodeID];
+                                        if (!nodePickingColor) {
+                                            nodePickingColor = vec4.createFrom(Math.random(),Math.random(),Math.random(), 1.);
+                                            pass.extras.nodeIDToColor[nodeID] = nodePickingColor;
+                                        }
+                                        primitive.pickingColor = nodePickingColor;
+                                    }
+                                } else if (pickingMode === "material") {
+                                    var materialID = primitive.primitive.material.baseId; //FIXME
+                                    if (materialID) {
+                                        var materialPickingColor = pass.extras.materialIDToColor[materialID];
+                                        if (!materialPickingColor) {
+                                            materialPickingColor = vec4.createFrom(Math.random(),Math.random(),Math.random(), 1.);
+                                            pass.extras.materialIDToColor[materialID] = materialPickingColor;
+                                        }
+                                        primitive.pickingColor = materialPickingColor;
+                                    }
+                                }
+                            }
+                            this.bindedProgram.setValueForSymbol("u_pickingColor", primitive.pickingColor);
+                            this.renderPrimitive(primitive, pass, time, parameters);
+                        }
+                    } else {
+                        for (var i = 0 ; i < count ; i++) {
+                            var primitive = primitives[i];
+                            if (primitive.node.hidden)
+                                continue;
+                            var globalIntensity = 1;
+                            parameters = primitive.primitive.material.parameters;
+                            var transparency = parameters["transparency"];
+                            if (transparency) {
+                                if (transparency.value != null)
+                                    globalIntensity *= transparency.value;
+                            }
+
+                            var filterColor = parameters["filterColor"];
+                            if (filterColor) {
+                                if (filterColor.value != null) {
+                                    globalIntensity *= filterColor.value[3];
+                                }
+                            }
+                            if (globalIntensity < 0.00001) {
+                                continue;
+                            }
+
+                            this.renderPrimitive(primitive, pass, time);
+                        }
+                    }
+                }
+            }
         }
     },
 
@@ -895,120 +1268,12 @@ exports.WebGLRenderer = Object.create(Object.prototype, {
         }
     },
 
-    renderPrimitivesWithPass: {
-        value: function(primitives, pass, parameters, time) {
-            var count = primitives.length;
-            var gl = this.webGLContext;
-            if (pass.instanceProgram) {
-                var ctx = gl;
-                var glProgram = this.resourceManager.getResource(pass.instanceProgram.program, this.programDelegate, ctx);
-                if (glProgram) {
-                    var blending = 0;
-                    var depthTest = 1;
-                    var depthMask = 1;
-                    var cullFaceEnable = 1;
-                    var states = pass.states;
-                    var blendEquation = gl.FUNC_ADD;
-                    var sfactor = gl.SRC_ALPHA;
-                    var dfactor = gl.ONE_MINUS_SRC_ALPHA;
-                    var isPickingPass = (pass.id === "__PickingPass");
-
-                    //FIXME: make a clever handling of states, For now this is incomplete and inefficient.(but robust)
-                    if (states) {
-                        if (states.blendEnable === 1)
-                            blending = 1;
-                        if (states.depthTestEnable === 0)
-                            depthTest = 0;
-                        if (states.depthMask === 0)
-                            depthMask = 0;
-                        if (states.cullFaceEnable === 0)
-                            cullFaceEnable = 0;
-                        if(states.blendEquation) {
-                            var blendFunc = states.blendFunc;
-                            if (blendFunc) {
-                                if (blendFunc.sfactor)
-                                    sfactor = blendFunc.sfactor;
-                                if (blendFunc.dfactor)
-                                    dfactor = blendFunc.dfactor;
-                            }
-                        }
-                    }
-
-                    //this.setState(gl.DEPTH_TEST, depthTest);
-                    this.setState(gl.CULL_FACE, cullFaceEnable);
-
-                    //gl.depthMask(depthMask);
-                    this.setState(gl.BLEND, blending);
-                    if (blending) {
-                        gl.blendEquation(blendEquation);
-                        gl.blendFunc(sfactor, dfactor);
-                    }
-                    this.bindedProgram = glProgram;
-
-                    if (isPickingPass) {
-                        for (var i = 0 ; i < count ; i++) {
-                            var primitive = primitives[i];
-                            if (primitive.node.hidden)
-                                continue;
-                            if (!primitive.pickingColor) {
-                                var nodeID = primitive.node.baseId; //FIXME
-                                if (nodeID) {
-                                    //FIXME move this into the picking technique when we have it..
-                                    //for picking, we need to associate a color to each node.
-                                    var nodePickingColor = pass.extras.nodeIDToColor[nodeID];
-                                    if (!nodePickingColor) {
-                                        nodePickingColor = vec4.createFrom(Math.random(),Math.random(),Math.random(), 1.);
-                                        pass.extras.nodeIDToColor[nodeID] = nodePickingColor;
-                                    }
-                                    primitive.pickingColor = nodePickingColor;
-                                }
-                            }
-                            this.bindedProgram.setValueForSymbol("u_pickingColor", primitive.pickingColor);
-                            this.renderPrimitive(primitive, pass, time, parameters);
-                        }
-                    } else {
-                        for (var i = 0 ; i < count ; i++) {
-                            var primitive = primitives[i];
-                            if (primitive.node.hidden)
-                                continue;
-                            var globalIntensity = 1;
-                            parameters = primitive.primitive.material.parameters;
-                            var transparency = parameters["transparency"];
-                            if (transparency) {
-                                if (transparency.value != null)
-                                    globalIntensity *= transparency.value;
-                            }
-
-                            var filterColor = parameters["filterColor"];
-                            if (filterColor) {
-                                if (filterColor.value != null) {
-                                    globalIntensity *= filterColor.value[3];
-                                }
-                            }
-                            if (globalIntensity < 0.00001) {
-                                continue;
-                            }
-
-                            if ((globalIntensity < 1) && !blending) {
-                                this.setState(gl.BLEND, true);
-                                gl.blendEquation(gl.FUNC_ADD);
-                                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-                                this.renderPrimitive(primitive, pass, time);
-                                this.setState(gl.BLEND, false);
-                            } else {
-                                this.renderPrimitive(primitive, pass, time);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    },
-
     _BBOXProgram: { value: null , writable: true },
 
     drawBBOX: {
         value: function(bbox, cameraMatrix, modelMatrix, projectionMatrix) {
+            if (bbox == null) return;
+
             var gl = this.webGLContext;
 
             this.bindedProgram = null;

@@ -30,13 +30,22 @@ var Transform = exports.Transform = Object.create(Base, {
     _matrix: { value: null, writable: true },
 
     _dirty: { value: true, writable: true },
-    _dirtyAffines: { value: true, writable: true },
+    _dirtyTranslation: { value: false, writable: true },
+    _dirtyRotation: { value: false, writable: true },
+    _dirtyScale: { value: false, writable: true },
 
     _translation: { value: null, writable: true },
+    _orientation: { value: null, writable: true },
     _rotation: { value: null, writable: true },
+
     _scale: { value: null, writable: true },
 
     _id: { value: 0, writable: true },
+
+    _AXIS_ANGLE: { value: 1, writable: true },
+    _QUATERNION: { value: 2, writable: true },
+
+    _rotationMode: { value : 1, writable: true },
 
     _fireTransformDidUpdate: {
         value: function(flag) {
@@ -57,13 +66,26 @@ var Transform = exports.Transform = Object.create(Base, {
 
     interpolateToTransform: {
         value: function(to, step, destination) {
-            step = Utilities.easeOut(step);
             this._rebuildAffinesIfNeeded();
             to._rebuildAffinesIfNeeded();
 
             Utilities.interpolateVec(this._translation, to._translation, step, destination._translation);
             Utilities.interpolateVec(this._scale, to._scale, step, destination._scale);
-            Utilities.inverpolateAxisAngle(this._rotation, to._rotation, step, destination._rotation);
+        
+            if (to._rotationMode === Transform._AXIS_ANGLE ) {
+                var rotation = vec4.create();
+
+                if (this._rotationMode == Transform._QUATERNION) {
+                    this.rotation = vec4.createFrom(to._rotation[0], to._rotation[1], to._rotation[2], -this.rotation[3]);
+                }
+
+                Utilities.interpolateVec(this.rotation, to._rotation, step, rotation);
+                destination.rotation = rotation;
+            } else {
+                var orientation = vec4.create();
+                quat4.slerp(this.orientation, to.orientation, step, orientation);
+                destination.orientation = orientation;
+            }
             //FIXME:breaks encapsulation
             destination._updateDirtyFlag(true);
         }
@@ -75,7 +97,6 @@ var Transform = exports.Transform = Object.create(Base, {
                 if (this._matrix == null) {
                     this._matrix = mat4.create();
                 }
-
                 if (this._intermediateMatrices == null) {
                     this._intermediateMatrices = [];
 
@@ -88,13 +109,20 @@ var Transform = exports.Transform = Object.create(Base, {
                 mat4.identity(this._matrix);
                 mat4.identity(this._intermediateMatrices[0]);
 
+                //reset all to identity
                 mat4.set(this._intermediateMatrices[0], this._intermediateMatrices[1]); //tr
                 mat4.set(this._intermediateMatrices[0], this._intermediateMatrices[2]); //scale
                 mat4.set(this._intermediateMatrices[0], this._intermediateMatrices[3]); //rotation
 
                 mat4.translate(this._intermediateMatrices[1], this._translation);
                 mat4.scale(this._intermediateMatrices[2], this._scale);
-                quat4.toMat4(this._rotation, this._intermediateMatrices[3]);
+
+                if (this._rotationMode === Transform._AXIS_ANGLE) {
+                    mat4.identity(this._intermediateMatrices[3]);
+                    mat4.rotate(this._intermediateMatrices[3], this._rotation[3], this._rotation);
+                } else {
+                    quat4.toMat4(this._orientation, this._intermediateMatrices[3]);
+                } 
 
                 mat4.multiply(this._matrix, this._intermediateMatrices[1]);
                 mat4.multiply(this._matrix, this._intermediateMatrices[2]);
@@ -113,15 +141,24 @@ var Transform = exports.Transform = Object.create(Base, {
 
             mat4.set(value, this._matrix);
             this._updateDirtyFlag(false);
-            this._dirtyAffines = true;
+            this._dirtyTranslation = this._dirtyRotation = this._dirtyScale = true;
+            this._rotationMode = this._QUATERNION;
         }
     },
 
     _rebuildAffinesIfNeeded: {
         value: function() {
-            if (this._dirtyAffines === true) {
-                Utilities.decomposeMat4(this.matrix, this._translation, this._rotation, this._scale);
-                this._dirtyAffines = false;
+            if (this._dirtyTranslation || this._dirtyRotation || this._dirtyScale) {
+                Utilities.decomposeMat4(this.matrix, this._dirtyTranslation ? this._translation : null, 
+                                                     this._dirtyRotation ? this._orientation : null, 
+                                                     this._dirtyScale ? this._scale : null);
+                
+                this._dirtyTranslation = this._dirtyRotation = this._dirtyScale = false;
+                if (this._rotationMode == Transform._AXIS_ANGLE)
+                    this.rotation = vec4.create(this.rotation);
+                else
+                    this.orientation = vec4.create(this.orientation);
+
             }
         }
     },
@@ -129,29 +166,55 @@ var Transform = exports.Transform = Object.create(Base, {
     translation : {
         set: function(value ) {
             this._translation = value;
+            this._dirtyTranslation = false;
             this._updateDirtyFlag(true);
         }, get: function(value) {
-            this._rebuildAffinesIfNeeded();
+            if (this._dirtyTranslation)
+                this._rebuildAffinesIfNeeded();
             return this._translation;
+        }
+    },
+
+    orientation : {
+        set: function(value ) {
+            this._dirtyRotation = false;
+            this._rotationMode = Transform._QUATERNION;
+            this._orientation = value;
+            this._updateDirtyFlag(true);
+        }, get: function(value) {
+            if (this._dirtyRotation)    
+                this._rebuildAffinesIfNeeded();
+            if (this._rotationMode !== Transform._QUATERNION) {
+                quat4.fromAngleAxis(this._rotation[3], this._rotation, this._orientation);
+            }
+            return this._orientation;
         }
     },
 
     rotation : {
         set: function(value ) {
+            this._dirtyRotation = false;
+            this._rotationMode = Transform._AXIS_ANGLE;
             this._rotation = value;
             this._updateDirtyFlag(true);
         }, get: function(value) {
-            this._rebuildAffinesIfNeeded();
+            if (this._dirtyRotation)
+                this._rebuildAffinesIfNeeded();
+            if (this._rotationMode !== Transform._AXIS_ANGLE) {
+                quat4.toAngleAxis(this._orientation, this._rotation);
+            }
             return this._rotation;
         }
     },
 
     scale : {
         set: function(value ) {
+            this._dirtyScale = false;
             this._scale = value;
             this._updateDirtyFlag(true);
         }, get: function(value) {
-            this._rebuildAffinesIfNeeded();
+            if (this._dirtyScale)   
+                this._rebuildAffinesIfNeeded();
             return this._scale;
         }
     },
@@ -160,6 +223,7 @@ var Transform = exports.Transform = Object.create(Base, {
         value: function() {
             this.translation = vec3.createFrom(0,0,0);
             this.rotation = vec4.createFrom(0,0,0,0);
+            this.orientation = vec4.createFrom(0,0,0,0);
             this.scale = vec3.createFrom(1,1,1);
             this.matrix = mat4.identity();
             this._id = Transform.bumpId();
@@ -174,8 +238,13 @@ var Transform = exports.Transform = Object.create(Base, {
                 this.matrix = mat4.create(description.matrix);
             } else if (description.translation || description.rotation || description.scale) {
                 this.translation = description.translation ? vec3.create(description.translation) : vec3.createFrom(0,0,0);
-                var r = description.rotation;
-                this.rotation = r ?  quat4.fromAngleAxis(r[3], vec3.createFrom(r[0],r[1],r[2])) : vec4.createFrom(0,0,0,0);
+                
+                if (description.rotation) {
+                    this.orientation = quat4.fromAngleAxis(description.rotation[3], vec3.createFrom(description.rotation[0],description.rotation[1],description.rotation[2]))
+                } else if (description.orientation) {
+                    this.orientation = quat4.create(description.orientation);
+                }
+
                 this.scale = description.scale ? vec3.create(description.scale) : vec3.createFrom(1,1,1);
             } else {
                 this.matrix = mat4.identity();
@@ -202,16 +271,20 @@ var Transform = exports.Transform = Object.create(Base, {
         value: function() {
             var transform = Object.create(Transform).init();
 
-            if (this._translation) {
-                transform.translation = vec3.createFrom(this._translation[0], this._translation[1], this._translation[2]);
+            if (this._translation != null) {
+                transform.translation = vec3.create(this._translation);
             }
 
-            if (this._scale) {
-                transform.scale = vec3.createFrom(this._scale[0], this._scale[1], this._scale[2]);
+            if (this._scale != null) {
+                transform.scale = vec3.create(this._scale);
             }
 
-            if (this._rotation) {
-                transform.rotation = quat4.create(this._rotation);
+            if (this._orientation != null) {
+                transform.orientation = quat4.create(this._orientation);
+            }
+
+            if (this._rotation != null) {
+                transform.rotation = vec4.create(this._rotation);
             }
 
             transform.matrix = mat4.create(this.matrix);

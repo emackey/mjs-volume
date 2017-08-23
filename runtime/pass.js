@@ -257,7 +257,9 @@ var Pass = Object.create(Object.prototype, {
     }
 });
 
-var ProgramPass = exports.ProgramPass = Montage.create(Pass, {
+var ProgramPass = exports.ProgramPass = Object.create(Pass);
+
+Montage.defineProperties(ProgramPass, {
 
     _attributes: { value: null, writable: true },
     _uniforms: { value: null, writable: true },
@@ -457,16 +459,11 @@ var ScenePassRenderer = Object.create(Object.prototype, {
                     }
                 }
             }
-
+            var idx;
             var picking = options ? ((options.picking === true) && (options.coords != null)) : false;
             if (picking) {
                 this.pickingRenderTarget.extras.coords = options.coords;
                 webGLRenderer.bindRenderTarget(this.pickingRenderTarget);
-            }
-
-            var skinnedNode = this.scene.rootNode.nodeWithPropertyNamed("instanceSkin");
-            if (skinnedNode) {
-                skinnedNode.instanceSkin.skin.process(skinnedNode, webGLRenderer.resourceManager);
             }
 
             //set projection matrix
@@ -477,20 +474,24 @@ var ScenePassRenderer = Object.create(Object.prototype, {
             }
 
             this.__nonOpaquePassesWithPrimitives.length = 0;
-            var idx;
             for (idx = 0 ; idx < this._primitivesPerPass.length ; idx++) {
                 var passWithPrimitives = this._primitivesPerPass[idx];
                 var pass = picking ? this.pickingPass : passWithPrimitives.pass;
 
                 var states = pass.states;
+                var transparent = false;
+                if (states.enable) {
+                    transparent = states.enable.indexOf(WebGLRenderingContext.prototype.BLEND) != -1;
+                }
+
                 //we do not check hitTesting for non-opaque elements
-                if (states.blendEnable && !picking) {
+                if (transparent && !picking) {
                     this.__nonOpaquePassesWithPrimitives.push(passWithPrimitives);
                 } else {
                     if (picking && this.pickingTechnique) {
-                        webGLRenderer.renderPrimitivesWithPass(passWithPrimitives.primitives, pass, this.pickingTechnique.parameters, time);
+                        webGLRenderer.renderPrimitivesWithPass(passWithPrimitives.primitives, pass, this.pickingTechnique.parameters, time, options.pickingMode);
                     } else {
-                        webGLRenderer.renderPrimitivesWithPass(passWithPrimitives.primitives, pass, null, time);
+                        webGLRenderer.renderPrimitivesWithPass(passWithPrimitives.primitives, pass, null, time, options.pickingMode);
                     }
                 }
             }
@@ -504,17 +505,35 @@ var ScenePassRenderer = Object.create(Object.prototype, {
                 webGLRenderer.unbindRenderTarget(this.pickingRenderTarget);
 
                 var pickedPixel = this.pickingRenderTarget.extras.pickedPixel;
-                var selectedNodeID = null;
-                var nodeIDs = Object.keys(this.pickingPass.extras.nodeIDToColor);
-                nodeIDs.forEach( function(nodeID) {
-                    var color = this.pickingPass.extras.nodeIDToColor[nodeID];
-                    if (Math.abs(Math.round(color[0]*255) - pickedPixel[0]) <= 1 &&
-                        Math.abs(Math.round(color[1]*255) - pickedPixel[1]) <= 1 &&
-                        Math.abs(Math.round(color[2]*255) - pickedPixel[2]) <= 1)  {
-                        selectedNodeID = nodeID;
-                    }
-                }, this);
-                options.delegate.handleSelectedNode(selectedNodeID);
+                if ((options.pickingMode === "node") && (this.pickingPass.extras.nodeIDToColor != null)) {
+                    var selectedNodeID = null;
+                    var nodeIDs = Object.keys(this.pickingPass.extras.nodeIDToColor);
+                    nodeIDs.forEach( function(nodeID) {
+                        var color = this.pickingPass.extras.nodeIDToColor[nodeID];
+                        if (Math.abs(Math.round(color[0]*255) - pickedPixel[0]) <= 1 &&
+                            Math.abs(Math.round(color[1]*255) - pickedPixel[1]) <= 1 &&
+                            Math.abs(Math.round(color[2]*255) - pickedPixel[2]) <= 1)  {
+                            selectedNodeID = nodeID;
+                        }
+                    }, this);
+                    if (options.delegate && options.delegate.handleSelectedNode)
+                        options.delegate.handleSelectedNode(selectedNodeID);
+                }
+
+                if ((options.pickingMode === "material") && (this.pickingPass.extras.materialIDToColor != null)) {
+                    var selectedMaterialID = null;
+                    var materialIDs = Object.keys(this.pickingPass.extras.materialIDToColor);
+                    materialIDs.forEach( function(materialID) {
+                        var color = this.pickingPass.extras.materialIDToColor[materialID];
+                        if (Math.abs(Math.round(color[0]*255) - pickedPixel[0]) <= 1 &&
+                            Math.abs(Math.round(color[1]*255) - pickedPixel[1]) <= 1 &&
+                            Math.abs(Math.round(color[2]*255) - pickedPixel[2]) <= 1)  {
+                            selectedMaterialID = materialID;
+                        }
+                    }, this);
+                    if (options.delegate && options.delegate.handleSelectedMaterial)
+                        options.delegate.handleSelectedMaterial(selectedMaterialID);
+                }
             }
         }
     },
@@ -542,6 +561,7 @@ var ScenePassRenderer = Object.create(Object.prototype, {
             this._pickingPass = value;
             this._pickingPass.id = "__PickingPass";
             this._pickingPass.extras.nodeIDToColor = {};
+            this._pickingPass.extras.materialIDToColor = {};
         }
     },
 

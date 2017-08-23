@@ -35,13 +35,16 @@ exports.Node = Component3D.specialize( {
             //FIXME: these guys are not removed
             this._hidden = false;
             this._visibility = "visible";
-            this._offsetMatrix = mat4.identity();
+            this._offsetTransform = Object.create(Transform).init();
 
             this.addOwnPropertyChangeListener("hidden", this);
             this.addOwnPropertyChangeListener("visibility", this);
-            this.addOwnPropertyChangeListener("offsetMatrix", this);
+            this.addOwnPropertyChangeListener("offsetTransform", this);
             this.addOwnPropertyChangeListener("originVector", this);
             this.addOwnPropertyChangeListener("glTFElement", this);
+            this.addOwnPropertyChangeListener("transformOrigin", this);
+            this.addOwnPropertyChangeListener("transformZOrigin", this);
+            this.addOwnPropertyChangeListener("cursor", this);
         }
     },
 
@@ -64,10 +67,12 @@ exports.Node = Component3D.specialize( {
         value: function() {
             this.handleHiddenChange();
             this.handleVisibilityChange();
-            this.handleOffsetMatrixChange();
+            this.handleOffsetTransformChange();
             this.handleOriginVectorChange();
+            this.handleTransformOriginChange();
+            this.handleTransformZOriginChange();
 
-            this._applyCSSPropertyWithValueForState(this.__STYLE_DEFAULT__, "offsetMatrix", this._offsetMatrix);
+            this._applyCSSPropertyWithValueForState(this.__STYLE_DEFAULT__, "offsetTransform", this._offsetTransform);
 
         }
     },
@@ -92,18 +97,47 @@ exports.Node = Component3D.specialize( {
         }
     },
 
-    offsetMatrix_animationSetter: {
-        set: function(value) {
-            this._offsetMatrix = value.matrix;
-            this.handleOffsetMatrixChange();
+    offsetTransform_animationSetter: {
+		set: function(value) {
+	     	this._offsetTransform = value;
+	      	this.handleOffsetTransformChange();
+	 	}
+	},
+
+    handleCursorChange: {
+        value: function() {
+            this.scene.dispatchEventNamed("cursorUpdate", true, false, this.cursor);
         }
     },
 
-    handleOffsetMatrixChange: {
+    handleTransformOriginChange: {
+        value: function() {
+
+            var currentTransformOrigin = this.transformOrigin;
+            if (currentTransformOrigin == null) {
+                currentTransformOrigin = this.initialValueForStyleableProperty("transformOrigin");
+            }
+
+            this.originVector = vec3.createFrom(currentTransformOrigin[0], currentTransformOrigin[1], this.transformZOrigin);
+        }
+    },
+
+    handleTransformZOriginChange: {
+        value: function() {
+            var currentTransformOrigin = this.transformOrigin;
+            if (currentTransformOrigin == null) {
+                currentTransformOrigin = this.initialValueForStyleableProperty("transformOrigin");
+            }
+
+            this.originVector = vec3.createFrom(currentTransformOrigin[0], currentTransformOrigin[1], this.transformZOrigin);
+        }
+    },
+
+    handleOffsetTransformChange: {
         value: function() {
             if (this.glTFElement != null) {
                 //access a private property. not sure yet which name would be the most appropriate yet
-                this.glTFElement._offsetMatrix = this._offsetMatrix;
+                this.glTFElement._offsetTransform = this._offsetTransform;
                 //FIXME: user a more appropriate name for this, it will just trigger a redraw
                 this.scene.dispatchEventNamed("materialUpdate", true, false, this);
             }
@@ -126,6 +160,10 @@ exports.Node = Component3D.specialize( {
     hidden: {
         set: function(value) {
             if (this._hidden != value) {
+                //FIXME: work-around visibility && hidden properties competing here.
+                //hidden, historical, and visibility because of CSS
+                this.visibility = (value === true) ? "hidden" : "visible";
+
                 this._hidden = value;
             }
         },
@@ -156,24 +194,26 @@ exports.Node = Component3D.specialize( {
         }
     },
 
-    _offsetMatrix: { value: null, writable:true },
+    _offsetTransform: { value: null, writable:true },
 
-    offsetMatrix: {
+    offsetTransform: {
         set: function(value) {
             if (this.glTFElement) {
                 var animationManager = this.scene.glTFElement.animationManager;
-                animationManager.removeAnimationWithTargetAndPath(this, "offsetMatrix_animationSetter");
+                animationManager.removeAnimationWithTargetAndPath(this, "offsetTransform_animationSetter");
                 if (this._style) {
                     if (this._style.transitions) {
-                        var transition = this._style.transitions["offsetMatrix"];
+                        var transition = this._style.transitions["offsetTransform"];
                         if (transition != null) {
                             if (transition.duration > 0) {
-                                var fromTr = Object.create(Transform).init();
-                                var toTr = Object.create(Transform).init();
-                                fromTr.matrix = this._offsetMatrix;
-                                toTr.matrix = value;
-                                var  transformAnimation = Object.create(BasicAnimation).init();
-                                transformAnimation.path = "offsetMatrix_animationSetter";
+                                this._offsetTransform.matrix = this._offsetTransform.matrix;
+                                fromTr = this._offsetTransform;
+                                toTr = value;
+
+                                //toTr.matrix = toTr.matrix;
+
+                                var transformAnimation = Object.create(BasicAnimation).init();
+                                transformAnimation.path = "offsetTransform_animationSetter";
                                 transformAnimation.target = this;
                                 transformAnimation.delegate = this;
                                 transformAnimation.from = fromTr;
@@ -189,10 +229,10 @@ exports.Node = Component3D.specialize( {
                 }
             }
 
-            this._offsetMatrix = value;
+            this._offsetTransform = value;
         },
         get: function() {
-            return this._offsetMatrix;
+            return this._offsetTransform;
         }
     },
 
@@ -204,6 +244,28 @@ exports.Node = Component3D.specialize( {
         },
         get: function() {
             return this._originVector;
+        }
+    },
+
+    _transformOrigin: { value: null, writable:true },
+
+    transformOrigin: {
+        set: function(value) {
+            this._transformOrigin = value;
+        },
+        get: function() {
+            return this._transformOrigin;
+        }
+    },
+
+    _transformZOrigin: { value: 50, writable:true },
+
+    transformZOrigin: {
+        set: function(value) {
+            this._transformZOrigin = value;
+        },
+        get: function() {
+            return this._transformZOrigin;
         }
     },
 
@@ -234,7 +296,7 @@ exports.Node = Component3D.specialize( {
         }
     },
 
-    _stylableProperties: { value: ["visibility", "offsetMatrix", "originVector"]},
+    _stylableProperties: { value: ["visibility", "offsetTransform", "transformOrigin", "transformZOrigin", "cursor"]},
 
     styleableProperties: {
         get: function() {
@@ -246,10 +308,18 @@ exports.Node = Component3D.specialize( {
         value: function(property) {
             if (property === "visibility") {
                 return "visible";
-            } else if (property === "offsetMatrix") {
-                return mat4.identity();
+            } else if (property === "offsetTransform") {
+                return Object.create(Transform).init();
             } else if (property === "originVector") {
                 return vec3.createFrom(50, 50, 50);
+            } else if (property === "offsetMatrix") {
+                return mat4.identity();
+            } else if (property === "transformOrigin") {
+                return vec2.createFrom(50, 50);
+            } else if (property === "transformZOrigin") {
+                return 50;                
+            } else if (property === "cursor") {
+                return "auto";
             }
         }
     }

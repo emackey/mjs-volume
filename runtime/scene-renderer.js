@@ -27,7 +27,8 @@ require("runtime/dependencies/gl-matrix");
 var Technique = require("runtime/technique").Technique;
 var ScenePass = require("runtime/pass").ScenePass;
 var BuiltInAssets = require("runtime/builtin-assets").BuiltInAssets;
-var o3dgc = require("runtime/dependencies/o3dgc");
+var o3dgc = require("runtime/dependencies/o3dgc").o3dgc;
+
 exports.SceneRenderer = Object.create(Object.prototype, {
 
     loadPickingTechnique: {
@@ -94,7 +95,7 @@ exports.SceneRenderer = Object.create(Object.prototype, {
                         timer.Tic();
                         decoder.DecodeHeader(ifs, bstream);
                         timer.Toc();
-                        console.log("DecodeHeader time (ms) " + timer.GetElapsedTime());
+                        //console.log("DecodeHeader time (ms) " + timer.GetElapsedTime());
                         // allocate memory
                         var byteSize =
                             3 * 4 * ifs.GetNCoord() +

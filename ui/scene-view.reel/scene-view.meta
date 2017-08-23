@@ -45,7 +45,7 @@
     "root": {
         "prototype": "montage/core/meta/module-blueprint",
         "properties": {
-            "name": "View",
+            "name": "SceneView",
             "propertyBlueprints": [
                 {
                     "@": "scene_property"
@@ -77,11 +77,11 @@
                 ]
             },
             "blueprintModule": {
-                "%": "ui/view/view.meta"
+                "%": "ui/scene-view/scene-view.meta"
             },
-            "exportName": "View",
+            "exportName": "SceneView",
             "module": {
-                "%": "ui/view.reel"
+                "%": "ui/scene-view.reel"
             }
         }
     }

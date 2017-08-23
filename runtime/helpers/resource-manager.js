@@ -512,13 +512,13 @@ exports.WebGLTFResourceManager = Object.create(Object, {
         value: function(request, delegate) {
             var self = this;
             var type;
-            var path = request.path;
+            var uri = request.uri;
             if (request.kind === "multi-parts") {
                 type = request.requests[0].type;
-                path = request.requests[0].path;
+                uri = request.requests[0].uri;
             } else {
                 type = request.type;
-                path = request.path;
+                uri = request.uri;
             }
 
             if (!type) {
@@ -526,13 +526,13 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                 return;
             }
 
-            if (!path) {
+            if (!uri) {
                 delegate.handleError(WebGLTFResourceManager.INVALID_PATH);
                 return;
             }
 
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', path, true);
+            xhr.open('GET', uri, true);
             xhr.responseType = type;
 
             if (request.range) {
@@ -540,7 +540,9 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                 xhr.setRequestHeader("Range", header);
             }
             //if this is not specified, 1 "big blob" scenes fails to load.
-            xhr.setRequestHeader("If-Modified-Since", "Sat, 01 Jan 1970 00:00:00 GMT");
+            //fixme disabled for the moment.
+            //xhr.setRequestHeader("If-Modified-Since", "Sat, 01 Jan 1970 00:00:00 GMT");
+
             xhr.onload = function(e) {
                 if ((this.status == 200) || (this.status == 206)) {
                     self._resourcesBeingProcessedCount--;
@@ -633,7 +635,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
             var resourceStatus = this._resourcesStatus[request.id];
             var node = null;
             var status = null;
-            var requestTree = this.requestTrees ? this.requestTrees[request.path] : null;
+            var requestTree = this.requestTrees ? this.requestTrees[request.uri] : null;
             if (resourceStatus) {
                 if (resourceStatus.status === "loading" )
                     return;
@@ -655,7 +657,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                     if (!requestTree) {
                         var rootTreeNode = Object.create(RequestTreeNode);
                         rootTreeNode.content = contRequests;
-                        this._requestTrees[request.path] = rootTreeNode;
+                        this._requestTrees[request.uri] = rootTreeNode;
                         requestTree = rootTreeNode;
                         trNode = rootTreeNode;
                     } else {
@@ -698,10 +700,10 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                 self.fireResourceAvailable.call(self, req_.id);
 
                 if (self._resourcesBeingProcessedCount < self.maxConcurrentRequests) {
-                    var requestTree  = resourceManager.requestTrees ? resourceManager.requestTrees[req_.path] : null;
+                    var requestTree  = resourceManager.requestTrees ? resourceManager.requestTrees[req_.uri] : null;
                     if (!self._processNextResource(requestTree)) {
                         if (requestTree) {
-                            delete resourceManager.requestTrees[req_.path];
+                            delete resourceManager.requestTrees[req_.uri];
                         }
                     }
                 }
@@ -717,27 +719,39 @@ exports.WebGLTFResourceManager = Object.create(Object, {
     },
 
 
-    _elementSizeForGLType: {
-        value: function(glType) {
-            switch (glType) {
-                case WebGLRenderingContext.FLOAT :
-                    return Float32Array.BYTES_PER_ELEMENT;
-                case WebGLRenderingContext.UNSIGNED_BYTE:
-                    return Uint8Array.BYTES_PER_ELEMENT;
-                case WebGLRenderingContext.UNSIGNED_SHORT:
-                    return Uint16Array.BYTES_PER_ELEMENT;
-                case WebGLRenderingContext.FLOAT_VEC2:
-                    return Float32Array.BYTES_PER_ELEMENT * 2;
-                case WebGLRenderingContext.FLOAT_VEC3:
-                    return Float32Array.BYTES_PER_ELEMENT * 3;
-                case WebGLRenderingContext.FLOAT_VEC4:
-                    return Float32Array.BYTES_PER_ELEMENT * 4;
-                case WebGLRenderingContext.FLOAT_MAT4:
-                    return Float32Array.BYTES_PER_ELEMENT * 16;
-                case WebGLRenderingContext.FLOAT_MAT3:
-                    return Float32Array.BYTES_PER_ELEMENT * 9;
+    _elementSizeForTypeAndComponentType: {
+        value: function(type, componentType) {
+            var size = 0;
+            var GL = WebGLRenderingContext.prototype;
+            switch (componentType) {
+                case GL.FLOAT :
+                    size = Float32Array.BYTES_PER_ELEMENT;
+                    break;
+                case GL.UNSIGNED_BYTE:
+                    size = Uint8Array.BYTES_PER_ELEMENT;
+                    break;
+                case GL.UNSIGNED_SHORT:
+                    size = Uint16Array.BYTES_PER_ELEMENT;
+                    break;
                 default:
-                    return null;
+                    return 0;
+            }
+            switch (type) {
+                case "SCALAR":
+                    return size;
+                case "VEC2":
+                    return 2 * size;
+                case "VEC3":
+                    return 3  * size;
+                case "VEC4":
+                case "MAT2":
+                    return 4 * size;
+                case "MAT3":
+                    return 9 * size;
+                case "MAT4":
+                    return 16 * size;
+                default:
+                    return 0;
             }
         }
     },
@@ -755,7 +769,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
             if (bufferView) {
                 var buffer = bufferView.buffer;
                 var byteOffset = wrappedBufferView.byteOffset + bufferView.description.byteOffset;
-                var range = [byteOffset , (this._elementSizeForGLType(wrappedBufferView.type) * wrappedBufferView.count) + byteOffset];
+                var range = [byteOffset , (this._elementSizeForTypeAndComponentType(wrappedBufferView.type, wrappedBufferView.componentType) * wrappedBufferView.count) + byteOffset];
                 if (buffer.description) {
                     if (buffer.description.type)
                         requestType = buffer.description.type;
@@ -766,7 +780,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                     "id" : wrappedBufferView.id,
                     "range" : range,
                     "type" : requestType,
-                    "path" : buffer.description.path,
+                    "uri" : buffer.description.uri,
                     "delegate" : delegate,
                     "ctx" : ctx,
                     "kind" : "single-part"
@@ -821,7 +835,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                         var bufferRequest = {
                             "id" : buffer.id,
                             "type" : requestType,
-                            "path" : buffer.description.path,
+                            "uri" : buffer.description.uri,
                             "delegate" : delegate,
                             "ctx" : ctx,
                             "kind" : "single-part" };
@@ -903,7 +917,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
         value: function(shader, delegate, ctx) {
             this._handleRequest({   "id":shader.id,
                 "type" : "text",
-                "path" : shader.description.path,
+                "uri" : shader.description.uri,
                 "delegate" : delegate,
                 "ctx" : ctx,
                 "kind" : "single-part" }, null);
@@ -922,7 +936,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
             this._resourcesStatus[resource.id] = { status: "loading" };
             var self = this;
 
-            if (resource.description.path) {
+            if (resource.description.uri) {
                 this._resourcesBeingProcessedCount++;
                 var videoElement = document.createElement('video');
                 videoElement.preload = "auto";
@@ -935,7 +949,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                     textureLoadedCallback(videoElement, resource.id, ctx);
                 });
 
-                videoElement.src = resource.description.path;
+                videoElement.src = resource.description.uri;
             }
 
         }
@@ -953,7 +967,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
             this._resourcesStatus[resource.id] = { status: "loading" };
             var self = this;
 
-            if (resource.description.path) {
+            if (resource.description.uri) {
                 this._resourcesBeingProcessedCount++;
                 var imageObject = new Image();
                 imageObject.onload = function() {
@@ -963,7 +977,7 @@ exports.WebGLTFResourceManager = Object.create(Object, {
                     self._storeResource(resource.id, imageObject);
                     textureLoadedCallback(imageObject, resource.id, ctx, index);
                 }
-                imageObject.src = resource.description.path;
+                imageObject.src = resource.description.uri;
             } else if (resource.description.image) {
                 textureLoadedCallback(resource.description.image, resource.id, ctx, index);
             }
@@ -1051,10 +1065,6 @@ exports.WebGLTFResourceManager = Object.create(Object, {
     //just used a hack now to setup resources coming from compressed meshes
     setResource: {
         value: function(resourceID, resource) {
-            if (this._resources[resourceID]) {
-                debugger;
-            }
-
             this._resources[resourceID] = resource;
         }
     },
