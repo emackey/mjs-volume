@@ -15,7 +15,7 @@ Features include:
 
 ## Testing
 
-    0. Open a Terminal
+0. Open a Terminal
     
     ```text
     git clone mjs-volume
